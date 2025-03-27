@@ -26,11 +26,12 @@ ADD_SELF_LOOP_SIMPLE="$FAIRSEQ_ROOT/examples/speech_recognition/kaldi/add-self-l
 OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initializer.py"
 
 
-adding to system paths
-DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
+# adding to system paths
+# DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+# UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
 
-
+DATASETS=$DIR_PATH/data/unlabelled_audio #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+UNLABELLED_TEXT=$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
 
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
@@ -968,11 +969,11 @@ python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-d
 #1. first we copy kaldi_st_selftrain folder into the right place 
 self_training()
 {
-#    export HYDRA_FULL_ERROR=1
-#    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+   export HYDRA_FULL_ERROR=1
+   export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 
    setup_env
    
@@ -981,9 +982,9 @@ self_training()
 
     TRAIN_FILE=$KALDI_ROOT/egs/kaldi_self_train/st/train.sh 
 
-    update_file_variables $TRAIN_FILE w2v_dir="$HOME/unsupervised2/gen_phonomes" lab_dir=$GANS_OUTPUT_PHONES out_dir=$ST_OUTPUT_PHONES arpa_lm="$TEXT_OUTPUT/phones/lm.phones.filtered.04.arpa" arpa_lm_bin="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin/" label=phnc
+    update_file_variables $TRAIN_FILE w2v_dir="$HOME/unsupervised2/gen_phonomes" lab_dir=$GANS_OUTPUT_PHONES out_dir=$ST_OUTPUT arpa_lm="$TEXT_OUTPUT/phones/lm.phones.filtered.04.arpa" arpa_lm_bin="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin/" label=phnc
 
-    # comment_line $TRAIN_FILE "  python local/copy_aligned_text.py < \$w2v_dir/\$x.\$label > \$data_dir/\$x_gt/text"
+    comment_line $TRAIN_FILE "  python local/copy_aligned_text.py < \$w2v_dir/\$x.\$label > \$data_dir/\$x_gt/text"
 
     update_script_with_condition $TRAIN_FILE
 
@@ -1036,7 +1037,7 @@ transcription_HMM_word_eval()
  IFS='/' read -ra ADDR <<< "$output"
  result="${ADDR[-1]%.tra.txt}"
 
-update_file_variables $DECODE_WORD w2v_dir="$HOME/unsupervised2/gen_phonomes" out_dir=$ST_OUTPUT_PHONES lexicon=$TEXT_OUTPUT/lexicon_filtered.lst wrd_arpa_lm=$TEXT_OUTPUT/kenlm.wrd.o40003.arpa wrd_arpa_lm_bin=$TEXT_OUTPUT/kenlm.wrd.o40003.bin dec_exp=${ADDR[-4]} dec_splits="valid" dec_script=steps/decode_fmllr.sh
+update_file_variables $DECODE_WORD w2v_dir="$HOME/unsupervised2/gen_phonomes" out_dir=$ST_OUTPUT lexicon=$TEXT_OUTPUT/lexicon_filtered.lst wrd_arpa_lm=$TEXT_OUTPUT/kenlm.wrd.o40003.arpa wrd_arpa_lm_bin=$TEXT_OUTPUT/kenlm.wrd.o40003.bin dec_exp=${ADDR[-4]} dec_splits="valid" dec_script=steps/decode_fmllr.sh
 
 chmod +x  $DECODE_WORD
 
@@ -1059,7 +1060,7 @@ transcription_HMM_word2_eval()
  result="${ADDR[-1]%.tra.txt}"
 
 dec_splits="train valid"
-update_file_variables $DECODE_WORD2 out_dir=$ST_OUTPUT_PHONES dec_exp=${ADDR[-4]} dec_splits="valid" dec_lmparam="${ADDR[-1]%.tra.txt}"
+update_file_variables $DECODE_WORD2 out_dir=$ST_OUTPUT dec_exp=${ADDR[-4]} dec_splits="valid" dec_lmparam="${ADDR[-1]%.tra.txt}"
 sed -i 's|\(decode\${dec_suffix}_[^/]*\)/scoring|\1.si/scoring|g' "$DECODE_WORD2"
 
 chmod +x  $DECODE_WORD2
