@@ -718,7 +718,7 @@ create_rVADfast() {
     
     log "removing silence from audios"
     mark_in_progress "removing silence from audios"
-    python "$HOME/wav2vec_setup/addition_scripts/vads.py" -r $RVAD_ROOT < "$MANIFEST_DIR/train.tsv" > "$MANIFEST_DIR/train.vads"
+    python "$DIR_PATH/vads.py" -r $RVAD_ROOT < "$MANIFEST_DIR/train.tsv" > "$MANIFEST_DIR/train.vads"
     
     # Check if the command was successful
     if [ $? -eq 0 ]; then
