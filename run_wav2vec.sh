@@ -12,7 +12,7 @@ set -o pipefail  # Exit if any command in a pipe fails
 
 # Main directories
 #.... directories to add to root.......
-DIR_PATH="$HOME/wav2vec_setup2"
+DIR_PATH="$HOME/unsupervised_wav"
 DATA_ROOT="$DIR_PATH/data" #find a way to deal with this
 FAIRSEQ_ROOT="$DIR_PATH/fairseq"
 KENLM_ROOT="$DIR_PATH/kenlm"  # Path to KenLM installation
@@ -1075,40 +1075,59 @@ $DECODE_WORD2
 
 main() {
     
-    create_dirs
-    chmod +x $DIR_PATH/wav2vec_config.sh #this file helps export all required variables 
-    $DIR_PATH/wav2vec_config.sh
-    activate_venv
-    setup_env
+    create_dirs #creates directories for storing outputs from the different steps 
+
+    activate_venv 
+
 
     
     log "Starting wav2vec unsupervised pipeline for $DATASET"
  
 
-    # Run all steps in sequence
+   """
+   it creates a manifest files for the audio dataset
+audio format
+   """
+    create_manifests 0 
 
-    create_manifests 0
-    
-    create_rVADfast
-    remove_silence
-    
+    '''
+      creates new manifest with silence removed
+    '''
+    create_rVADfast # identifies the sequence of silence in an audio 
+    remove_silence # removes the silence sequence found by rvad in the audio
     create_manifests_nonsil 0.1
 
-    # prepare_audio
+'''
+   Train GANS: 
+       prepare_audio:
+       prepare_text:
+       train_gans:
+'''
+    prepare_audio 
     prepare_text  
-
-    # create our GANS
     train_gans
 
+'''
+Transcriptions from GAN model 
+     transcription_gans_viterbi: outputs phonetic transcription in variable name $GANS_OUTPUT_PHONES
+     transcription_gans_kaldi: outputs word transcription in variable name $GANS_OUTPUT_WORDS
+'''
     transcription_gans_viterbi  #for these we need both train and validation since the train will be used by the HMM
     transcription_gans_kaldi
 
+'''
+  Does Hidden Markov training on the outputs from the transcription_gans_viterbi and prepare_audio 
+ outputs three HMM 
+'''
     self_training
 
+'''
+transcribes and evaluates the validation set using the best HMM Model 
+'''
     transcription_HMM_phone_eval
-    
     transcription_HMM_word_eval
     transcription_HMM_word2_eval
+    
     log "Pipeline completed successfully!"
 }
 
