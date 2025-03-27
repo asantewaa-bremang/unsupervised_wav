@@ -27,8 +27,11 @@ OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initiali
 
 
 # adding to system paths
-DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
+# DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+# UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
+
+DATASETS=$DIR_PATH/data/unlabelled_audio #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+UNLABELLED_TEXT=$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
 
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
@@ -129,7 +132,7 @@ activate_venv() {
 
 setup_env() {
     # Set base directory for the project
-    export DIR_PATH="$HOME/wav2vec_setup"
+    export DIR_PATH="$HOME/wav2vec_setup2"
 
     # Set project-specific environment variables
     export DATA_ROOT="${DIR_PATH}/data"
@@ -243,7 +246,7 @@ replace_std_endl() {
     fi
 
     # Use sed to replace std::endl with \n and save the output
-    sed -i 's/std::endl/\\n/g' "$input_file"
+    sed -i 's/std::endl/"\\n"/g' "$input_file"
 
     echo "Replacement done in '$input_file'"
 }
@@ -386,23 +389,23 @@ update_yaml_config() {
 
     # Run embedded Python script
     python3 - "$CONFIG_FILE" "$@" <<EOF
-    import yaml
-    import sys
-    import os
+import yaml
+import sys
+import os
 
-    config_file = sys.argv[1]
-    updates = dict(arg.split("=", 1) for arg in sys.argv[2:])
+config_file = sys.argv[1]
+updates = dict(arg.split("=", 1) for arg in sys.argv[2:])
 
-    if not os.path.exists(config_file):
+if not os.path.exists(config_file):
         print(f"Error: File '{config_file}' does not exist.", file=sys.stderr)
         sys.exit(1)
 
     # Load YAML
-    with open(config_file, "r") as file:
+with open(config_file, "r") as file:
         yaml_data = yaml.safe_load(file) or {}
 
     # Function to update nested keys
-    def set_nested_value(data, key_path, value):
+def set_nested_value(data, key_path, value):
         keys = key_path.split(".")
         d = data
         for key in keys[:-1]:  
@@ -410,15 +413,15 @@ update_yaml_config() {
         d[keys[-1]] = value  # Set the final key
 
     # Apply updates
-    for key, value in updates.items():
+for key, value in updates.items():
         print(f"Updating: {key} = {value}")
         set_nested_value(yaml_data, key, value)
 
     # Save updated YAML
-    with open(config_file, "w") as file:
+with open(config_file, "w") as file:
         yaml.dump(yaml_data, file, default_flow_style=False)
 
-    print(f"Configuration file '{config_file}' updated successfully.")
+print(f"Configuration file '{config_file}' updated successfully.")
 EOF
 }
 
@@ -584,32 +587,32 @@ update_script_with_condition() {
     export SCRIPT_FILE
     
     python3 << 'EOF'
-    import re
-    import sys
-    import os
+import re
+import sys
+import os
 
     # Retrieve the target script filename from the environment variable
-    script_file = os.environ['SCRIPT_FILE']
+script_file = os.environ['SCRIPT_FILE']
 
     # Define a regex pattern that matches the ground truth cp command
     # The pattern is designed to match:
     # cp $data_dir/$x/{feats.scp,cmvn.scp,utt2spk,spk2utt} $data_dir/$x_gt/
-    pattern = re.compile(r'cp\s+\$data_dir/\$x/\{feats\.scp,cmvn\.scp,utt2spk,spk2utt\}\s+\$data_dir/\$x_gt/')
+pattern = re.compile(r'cp\s+\$data_dir/\$x/\{feats\.scp,cmvn\.scp,utt2spk,spk2utt\}\s+\$data_dir/\$x_gt/')
 
     # The conditional block to insert
-    conditional_block = '''if [[ "$x" == "$valid_name" ]]; then
+conditional_block = '''if [[ "$x" == "$valid_name" ]]; then
         python local/copy_aligned_text.py < $w2v_dir/$x.$label > $data_dir/$x_gt/text
-    fi
+fi
     '''
 
     # Read the original script
-    with open(script_file, 'r') as f:
+with open(script_file, 'r') as f:
         lines = f.readlines()
 
-    new_lines = []
-    found = False
+new_lines = []
+found = False
 
-    for line in lines:
+for line in lines:
         new_lines.append(line)
         # When the line matches our pattern, insert the conditional block immediately after it
         if pattern.search(line):
@@ -618,15 +621,15 @@ update_script_with_condition() {
             if not any('if [[ "$x" == "$valid_name" ]]; then' in l for l in lines):
                 new_lines.append(conditional_block + "\n")
 
-    if not found:
+if not found:
         sys.stderr.write("Pattern not found in file. No modifications done.\n")
         sys.exit(1)
 
     # Write back the modified script
-    with open(script_file, 'w') as f:
+with open(script_file, 'w') as f:
         f.writelines(new_lines)
 
-    print(f"Modification completed. {script_file} updated.")
+print(f"Modification completed. {script_file} updated.")
 EOF
 }
 
@@ -827,10 +830,10 @@ prepare_audio() {
 #======================Text preparation =================================
 # unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
 prepare_text() {
-#    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT=$KALDI_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT=$KALDI_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
 
    if is_completed "prepare_text"; then
         log "Skipping text preparation (already completed)"
@@ -858,10 +861,10 @@ prepare_text() {
 }
 #=========================== GANS training and preparation ==============================
 train_gans(){
-# export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH="/$DIR_PATH:$PYTHONPATH"
+export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH="/$DIR_PATH:$PYTHONPATH"
    
 
 update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" task.text_data="$TEXT_OUTPUT/phones/" task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" model.code_penalty=2,4 model.gradient_penalty=1.5 model.smoothness_weight=0.5 checkpoint.save_dir=$RESULTS_DIR  
@@ -889,11 +892,11 @@ delete_yaml_field "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.y
 transcription_gans_viterbi(){
    activate_venv #will delete later
 
-#    export HYDRA_FULL_ERROR=1
-#    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+   export HYDRA_FULL_ERROR=1
+   export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 #    
 
 #updating parameters viterbi.yaml 
@@ -1091,7 +1094,7 @@ main() {
     
     create_manifests_nonsil 0.1
 
-    prepare_audio
+    # prepare_audio
     prepare_text  
 
     # create our GANS
