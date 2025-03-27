@@ -350,22 +350,22 @@ EOF
 # ==================== MAIN EXECUTION ====================
 
 main() {
-    # create_dirs
-    # setup_venv
-    # install_fairseq
-    # log "Starting Wav2Vec environment setup..."
+    create_dirs
+    setup_venv
+    install_fairseq
+    log "Starting Wav2Vec environment setup..."
     
     
-    # # install_system_deps
-    # install_rVADfast
-    # install_pytorch
-    # install_flashlight
-    # install_pykaldi
+    # install_system_deps
+    install_rVADfast
+    install_pytorch
+    install_flashlight
+    install_pykaldi
     
-    # install_kenlm
-    # download_pretrained_model
+    install_kenlm
+    download_pretrained_model
     download_languageIdentification_model
-    # create_config_file
+    create_config_file
     
     log "Setup completed successfully!"
     log "------------------------------------------------------"
