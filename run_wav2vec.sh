@@ -26,12 +26,11 @@ ADD_SELF_LOOP_SIMPLE="$FAIRSEQ_ROOT/examples/speech_recognition/kaldi/add-self-l
 OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initializer.py"
 
 
-# adding to system paths
-# DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-# UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
+adding to system paths
+DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
 
-DATASETS=$DIR_PATH/data/unlabelled_audio #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-UNLABELLED_TEXT=$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
+
 
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
