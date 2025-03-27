@@ -248,6 +248,9 @@ install_pykaldi()
     #build protobuf 
     ./install_protobuf.sh
 
+    sudo apt-get install libprotobuf-dev protobuf-compiler
+
+
     #build clif 
     ./install_clif.sh
 
