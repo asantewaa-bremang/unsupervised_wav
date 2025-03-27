@@ -235,9 +235,11 @@ install_pykaldi()
     # source "$VENV_PATH/bin/activate"
 
     # # # #installing important dependencies 
-    # python3 -m pip install numpy pyparsing ninja wheel setuptools
-    # python -m pip install --upgrade pip setuptools
-    # git clone https://github.com/pykaldi/pykaldi.git
+    python3 -m pip install numpy pyparsing ninja wheel setuptools
+    python -m pip install --upgrade pip setuptools
+    git clone https://github.com/pykaldi/pykaldi.git
+    sudo apt-get update
+    sudo apt-get install sox
 
     cd "$INSTALL_ROOT/pykaldi/tools"
     
