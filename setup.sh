@@ -11,7 +11,7 @@ set -o pipefail  # Exit if any command in a pipe fails
 # Set these variables according to your environment
 
 # Main directories
-INSTALL_ROOT="$HOME/wav2vec_setup2"
+INSTALL_ROOT="$HOME/unsupervised_wav"
 FAIRSEQ_ROOT="$INSTALL_ROOT/fairseq"
 KENLM_ROOT="$INSTALL_ROOT/kenlm"
 VENV_PATH="$INSTALL_ROOT/venv"
