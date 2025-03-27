@@ -15,11 +15,13 @@ set -o pipefail  # Exit if any command in a pipe fails
 DIR_PATH="$HOME/unsupervised_wav"
 DATA_ROOT="$DIR_PATH/data" #find a way to deal with this
 FAIRSEQ_ROOT="$DIR_PATH/fairseq"
-KENLM_ROOT="$DIR_PATH/kenlm"  # Path to KenLM installation
+KENLM_ROOT="$DIR_PATH/kenlm/build/bin"  # Path to KenLM installation
 VENV_PATH="$DIR_PATH/venv"    # Path to virtual environment (optional)
 KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
 RVAD_ROOT="$DIR_PATH/rVADfast/src/rVADfast"
 
+
+#fairseq file paths with slight changes made 
 SPEECHPROCS="$DIR_PATH/rVADfast/src/rVADfast/speechproc/speechproc.py"
 PREPARE_AUDIO="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/prepare_audio.sh"
 ADD_SELF_LOOP_SIMPLE="$FAIRSEQ_ROOT/examples/speech_recognition/kaldi/add-self-loop-simple.cc"
@@ -27,11 +29,11 @@ OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initiali
 
 
 # adding to system paths
-# DATASETS=/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-# UNLABELLED_TEXT=/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
+DATASETS=$1 #/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+UNLABELLED_TEXT=$2 #/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
 
-DATASETS=$DIR_PATH/data/unlabelled_audio #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-UNLABELLED_TEXT=$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
+# DATASETS=$DIR_PATH/data/unlabelled_audio #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
+# UNLABELLED_TEXT=$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
 
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
@@ -40,18 +42,13 @@ NEW_BATCH_SIZE=32
 FASTTEXT_LIB_MODEL="$DIR_PATH/lid_model/lid.176.bin" 
 MODEL="$DIR_PATH/pre-trained/wav2vec_vox_new.pt"
 
-
 # Dataset specifics
 
 DATASET="librispeech"
 
-
 # Output directories (will be created if they don't exist)
 MANIFEST_DIR="$DATA_ROOT/manifests"
-# FEATURES_DIR="$DATA_ROOT/features/$DATASET"
 CLUSTERING_DIR="$DATA_ROOT/clustering/$DATASET"
-# PHNDICT_DIR="$DATA_ROOT/phoneme_dictionaries/$DATASET"
-# UNITS_DIR="$DATA_ROOT/units/$DATASET"
 LM_DIR="$DATA_ROOT/language_models/$DATASET"
 RESULTS_DIR="$DATA_ROOT/results/$DATASET"
 CHECKPOINT_DIR="$DATA_ROOT/checkpoints/$DATASET"
@@ -60,8 +57,7 @@ TEXT_OUTPUT="$DATA_ROOT/text"
 GANS_OUTPUT_PHONES="$DATA_ROOT/transcription_phones"
 GANS_OUTPUT_WORDS="$DATA_ROOT/transcription_words"
 ST_OUTPUT="$DATA_ROOT/selftraining"
-# ST_OUTPUT="$DATA_ROOT/st_phones_st"
-# ST_OUTPUT_WORD="$DATA_ROOT/st_word"
+
 
 # Checkpoint file to track progress
 CHECKPOINT_FILE="$CHECKPOINT_DIR/progress.checkpoint"
@@ -69,8 +65,6 @@ CHECKPOINT_FILE="$CHECKPOINT_DIR/progress.checkpoint"
 # ==================== HELPER FUNCTIONS ====================
 
 # Create directories if they don't exist
-# create_dirs() {
-#     mkdir  "$MANIFEST_DIR"}
 create_dirs() {
     mkdir -p "$MANIFEST_DIR" "$CLUSTERING_DIR"  \
               "$LM_DIR" "$RESULTS_DIR" "$CHECKPOINT_DIR" "$LOG_DIR" "$GANS_OUTPUT_PHONES" \
@@ -131,26 +125,9 @@ activate_venv() {
 }
 
 setup_env() {
-    # Set base directory for the project
-    export DIR_PATH="$HOME/wav2vec_setup2"
 
-    # Set project-specific environment variables
-    export DATA_ROOT="${DIR_PATH}/data"
-    export FAIRSEQ_ROOT="${DIR_PATH}/fairseq"
-    export KENLM_ROOT="${DIR_PATH}/kenlm"      # Path to KenLM installation
-    export VENV_PATH="${DIR_PATH}/venv"        # Path to virtual environment (optional)
-    # export KALDI_ROOT="${DIR_PATH}/kaldi"  # Kaldi installation path
-    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-    
-    export RVAD_ROOT="${DIR_PATH}/rVADfast/src/rVADfast"
     export HYDRA_FULL_ERROR=1
-
-    # Optionally add directories containing executables to PATH.
-    # Adjust these subdirectory names if your project layout is different.
-    export PATH="${FAIRSEQ_ROOT}/bin:${KENLM_ROOT}/bin:${KALDI_ROOT}/src/bin:${RVAD_ROOT}:$PATH"
-
-    # Add library directories (if needed) to LD_LIBRARY_PATH.
-    # For example, Kaldi libraries and KenLM libraries.
+    # export PATH="${FAIRSEQ_ROOT}/bin:${KENLM_ROOT}/bin:${KALDI_ROOT}/src/bin:${RVAD_ROOT}:$PATH"
     # export LD_LIBRARY_PATH="${KALDI_ROOT}/src/lib:${KENLM_ROOT}/lib:$LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH="${KALDI_ROOT}/src/lib:${KENLM_ROOT}/lib:${LD_LIBRARY_PATH:-}"
 
@@ -251,51 +228,6 @@ replace_std_endl() {
     echo "Replacement done in '$input_file'"
 }
 
-
-update_yaml_config1() {
-  if [ "$#" -lt 2 ]; then
-    echo "Usage: update_yaml_config <config_file> <key=value> [<key=value> ...]"
-    return 1
-  fi
-
-  local config_file="$1"
-  shift
-
-  if [ ! -f "$config_file" ]; then
-    echo "Error: File '$config_file' does not exist."
-    return 1
-  fi
-
-  # Create a backup of the original file.
-  cp "$config_file" "$config_file.bak"
-  echo "Backup of '$config_file' saved as '$config_file.bak'."
-
-  # Loop over each key=value pair.
-  for update in "$@"; do
-    # Split the update into key and value.
-    local key="${update%%=*}"
-    local value="${update#*=}"
-
-    if [[ "$key" == *.* ]]; then
-      # If the key contains a dot, assume the format is parent.child.
-      local parent="${key%%.*}"
-      local child="${key#*.}"
-      # Use sed to update the block under the parent key.
-      # This command finds the range from the parent's line until the next non-indented line,
-      # then looks for a line starting (with possible spaces) with the child key.
-      sed -i -E "/^[[:space:]]*$parent:/,/^[^[:space:]]/ s|^([[:space:]]*$child:[[:space:]]*).*|\1$value|" "$config_file"
-      echo "Updated nested key '$key' to '$value'."
-    else
-      # For a top-level key, match the beginning of the line (with optional spaces) and replace its value.
-      sed -i -E "s|^([[:space:]]*$key:[[:space:]]*).*|\1$value|" "$config_file"
-      echo "Updated key '$key' to '$value'."
-    fi
-  done
-
-  echo "Configuration file '$config_file' has been updated."
-}
-
-
 add_to_existing_yaml() {
   if [ "$#" -ne 4 ]; then
     echo "Usage: add_to_existing_yaml <config_file> <parent_key> <new_key> <new_value>"
@@ -312,9 +244,6 @@ add_to_existing_yaml() {
     return 1
   fi
 
-#   echo "Processing YAML: $config_file"
-#   echo "Parent Key: $parent_key"
-#   echo "New Key: $new_key, New Value: $new_value"
 
   # Convert input to a valid yq-compatible path
   full_path=".$parent_key.$new_key"
@@ -366,17 +295,6 @@ delete_yaml_field() {
 
 
 
-update_imports() {
-    local file="$1"
-    
-    # Use sed to modify the import statements
-    sed -i -E \
-        's/from fairseq import checkpoint_utils, progress_bar, tasks, utils/from fairseq.logging import progress_bar\nfrom fairseq import checkpoint_utils, tasks, utils/' "$file"
-
-    echo "Updated imports in $file"
-}
-
-
 #script is used to update a yaml file 
 update_yaml_config() {
     if [ "$#" -lt 2 ]; then
@@ -424,9 +342,6 @@ with open(config_file, "w") as file:
 print(f"Configuration file '{config_file}' updated successfully.")
 EOF
 }
-
-
-#!/bin/bash
 
 # Function to update a file's empty variables with provided values
 update_file_variables() {
@@ -491,13 +406,10 @@ comment_line() {
 }
 
 
-#!/usr/bin/env bash
 
 rewrite_file() {
     local input_file="$1"
     local temp_file="temp_file.py"
-    # local TEMP_FILE="$DIR_PATH/kaldi/egs/kaldi_self_train/st/local/unsup_select_temp.py"
-
     # Step 1: Remove any "f args.gt_tra:" prefixes from every line.
     sed -i 's/^f args\.gt_tra:[[:space:]]*//' "$input_file"
 
@@ -541,8 +453,6 @@ rewrite_file() {
     echo "File '$input_file' has been updated with the commented block."
 }
 
-# Example usage:
-# rewrite_file "script.py"
 
 get_best_path() {
     local input_file="$1"
@@ -770,11 +680,6 @@ create_manifests_nonsil() {
     log "Creating data manifests..."
     mark_in_progress "create_manifests_nonsil"
     
-    # Adjust this command according to your dataset
-    # echo "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py"
-    # echo "$DATASETS"
-    # echo "$MANIFEST_DIR"
-    
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$DATA_ROOT/processed_audio/unlabelled_audio" \
         --dest "$MANIFEST_DIR" \
@@ -808,9 +713,6 @@ prepare_audio() {
         return 0
     fi
     
-    #delete later
-    source "$HOME/myenv1/bin/activate"
-    
     log "audio preparation"
     mark_in_progress "audio preparation"
 
@@ -833,16 +735,13 @@ prepare_text() {
    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT=$KALDI_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
 
    if is_completed "prepare_text"; then
         log "Skipping text preparation (already completed)"
         return 0
     fi
-    
-    #delete later
-    source "$HOME/myenv1/bin/activate"
- 
+
     log "audio preparation"
     mark_in_progress "audio preparation"
     replace_std_endl $ADD_SELF_LOOP_SIMPLE
@@ -863,7 +762,7 @@ prepare_text() {
 train_gans(){
 export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH="/$DIR_PATH:$PYTHONPATH"
    
 
@@ -890,7 +789,6 @@ delete_yaml_field "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.y
 
 #=================Evaluating the GANS =============================================
 transcription_gans_viterbi(){
-   activate_venv #will delete later
 
    export HYDRA_FULL_ERROR=1
    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
@@ -926,15 +824,12 @@ transcription_gans_kaldi(){
    cp -r $FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/viterbi.yaml $FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/kaldi.yaml
 
  
-#    export HYDRA_FULL_ERROR=1
-#    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+   export HYDRA_FULL_ERROR=1
+   export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
   
-
-
-
 update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/kaldi.yaml" fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" kaldi_decoder_config.hlg_graph_path="$TEXT_OUTPUT/fst/phn_to_words_sil/HLGa.phn.kenlm.wrd.o40003.fst" kaldi_decoder_config.output_dict=$TEXT_OUTPUT/fst/phn_to_words_sil/kaldi_dict.kenlm.wrd.o40003.txt fairseq.task.labels="wrd" w2l_decoder="KALDI" fairseq.dataset.gen_subset=train fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 results_path="$GANS_OUTPUT_WORDS" 
 
 
@@ -988,27 +883,20 @@ self_training()
 
     update_script_with_condition $TRAIN_FILE
 
-    # #for phonemes
-    # cp -r $TEXT_OUTPUT/phones/dict.phn.txt $HOME/unsupervised2/gen_phonomes/dict.phnc.txt #WILL HAVE TO CHANGE THIS AND MAKE IT MORE DYNAMIC
-
-    # #for words 
-    # cp -r $TEXT_OUTPUT/words.txt $HOME/unsupervised2/gen_phonomes/dict.wrd.txt #i will have to fix this too and make it dynamic
-
-
     cd $KALDI_ROOT/egs/kaldi_self_train/st/ 
     chmod +x $TRAIN_FILE
     $TRAIN_FILE > $KALDI_ROOT/egs/kaldi_self_train/st/results.txt
 
 }
 
-#2. add the path names and make changes 
+
 
 transcription_HMM_phone_eval()
 {
-#     export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 
    
  DECODE_PHONE=$KALDI_ROOT/egs/kaldi_self_train/st/decode_phone.sh
@@ -1026,10 +914,10 @@ $DECODE_PHONE
 
 transcription_HMM_word_eval()
 {
-#     export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
    
  DECODE_WORD=$KALDI_ROOT/egs/kaldi_self_train/st/decode_word_step1.sh
 
@@ -1048,10 +936,10 @@ $DECODE_WORD > $KALDI_ROOT/egs/kaldi_self_train/st/results_word.txt
 
 transcription_HMM_word2_eval()
 {
-#     export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
-#    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-#    export KENLM_ROOT="$KENLM_ROOT/build/bin"
-#    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
    
  DECODE_WORD2=$KALDI_ROOT/egs/kaldi_self_train/st/decode_word_step2.sh
 
@@ -1069,7 +957,6 @@ cd $KALDI_ROOT/egs/kaldi_self_train/st/
 $DECODE_WORD2
 
 }
-
 
 # ==================== MAIN EXECUTION ====================
 
