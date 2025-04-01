@@ -244,7 +244,12 @@ install_flashlight() {
         cd "$INSTALL_ROOT/sequence"
     fi
     
-    pip install .
+    # pip install .
+    export USE_CUDA=1
+    cmake -S . -B build
+    cmake --build build --parallel
+    cd build && ctest && cd .. # run tests
+    cmake --install build
     
     log "Flashlight installed successfully."
 }
