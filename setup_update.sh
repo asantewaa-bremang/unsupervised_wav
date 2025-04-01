@@ -474,8 +474,9 @@ main() {
     create_dirs
     install_system_deps
     setup_venv
-    install_pytorch
     install_fairseq
+    install_pytorch
+    
     install_kenlm
     install_rVADfast
     install_flashlight
