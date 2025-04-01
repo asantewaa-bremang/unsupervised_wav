@@ -130,7 +130,8 @@ install_pytorch() {
     
     # Install other required packages
     pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
-    pip install npy-append-array faiss-gpu h5py omegaconf hydra-core
+    pip install npy-append-array faiss-gpu h5py omegaconf 
+    #hydra-core
     
     # Install kaldi-io separately (often used with wav2vec)
     pip install kaldi-io
