@@ -53,7 +53,6 @@ install_system_deps() {
     
     if command_exists apt-get; then
         # Debian/Ubuntu
-        sudo apt-get update
         sudo apt-get install -y \
             build-essential \
             cmake \
@@ -63,9 +62,7 @@ install_system_deps() {
             libfftw3-dev \
             libopenblas-dev \
             python3-pip \
-            python${PYTHON_VERSION} \
-            python${PYTHON_VERSION}-dev \
-            python${PYTHON_VERSION}-venv \
+            python3-venv \
             git \
             wget \
             zlib1g-dev \
