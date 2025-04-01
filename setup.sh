@@ -161,12 +161,12 @@ install_rVADfast() {
     # Activate virtual environment
     source "$VENV_PATH/bin/activate"
 
-    if [ -f $RVADFAST ]; then
+    if [ -f $RVADFAST_PATH ]; then
         log "RVADFAST already exists. Skipping download."
     else
         git clone https://github.com/zhenghuatan/rVADfast.git
-        if [ -f "$RVADFAST/requirements.txt" ]; then
-            pip install -r "$RVADFAST/requirements.txt"
+        if [ -f "$RVADFAST_PATH/requirements.txt" ]; then
+            pip install -r "$RVADFAST_PATH/requirements.txt"
         fi
     fi
 
