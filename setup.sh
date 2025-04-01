@@ -359,10 +359,11 @@ main() {
     setup_venv
     
     log "Starting Wav2Vec environment setup..."
+    install_system_deps
     install_fairseq
     install_kenlm
     
-    # install_system_deps
+    
     install_rVADfast
     install_pytorch
     install_flashlight
