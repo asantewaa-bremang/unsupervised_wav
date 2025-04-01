@@ -4,8 +4,9 @@
 # This script handles all the necessary installations and environment setup
 # for running the fairseq wav2vec unsupervised pipeline
 
-set -e  # Exit on error
-set -o pipefail  # Exit if any command in a pipe fails
+set -e                       # Exit on error
+set -o pipefail              # Exit if any command in a pipe fails
+set -x                       # Print each command for debugging
 
 # ==================== CONFIGURATION ====================
 # Set these variables according to your environment
@@ -30,7 +31,8 @@ PYTHON_VERSION="3.10"  # Options: 3.7, 3.8, 3.9, 3.10
 # Log message with timestamp
 log() {
     local message="$1"
-    local timestamp=$(date +"%Y-%m-%d %H:%M:%S")
+    local timestamp
+    timestamp=$(date +"%Y-%m-%d %H:%M:%S")
     echo "[$timestamp] $message"
 }
 
@@ -50,9 +52,10 @@ create_dirs() {
 # Step 1: Install system dependencies
 install_system_deps() {
     log "Installing system dependencies..."
-    
+
     if command_exists apt-get; then
-        # Debian/Ubuntu
+        sudo apt-get update
+
         sudo apt-get install -y \
             build-essential \
             cmake \
@@ -81,12 +84,12 @@ install_system_deps() {
             gfortran \
             libbz2-dev \
             liblzma-dev
-    
+
     else
         log "ERROR: Unsupported package manager. Please install dependencies manually."
         exit 1
     fi
-    
+
     log "System dependencies installed successfully."
 }
 
@@ -104,9 +107,9 @@ setup_venv() {
     # Activate virtual environment
     source "$VENV_PATH/bin/activate"
     
-    # Upgrade pip
+    # Upgrade pip and related tools
     pip install --upgrade pip setuptools wheel
-    
+
     log "Python virtual environment setup completed."
 }
 
@@ -114,29 +117,25 @@ setup_venv() {
 install_pytorch() {
     log "Installing PyTorch and related packages..."
     
-    # Activate virtual environment
     source "$VENV_PATH/bin/activate"
     
-    # Install PyTorch with CUDA support if available
+    # Uncomment the following block if you want CUDA support (ensure nvcc exists)
     # if command_exists nvcc; then
-    #     # CUDA is available
     #     log "CUDA detected. Installing PyTorch with CUDA support..."
     #     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
     # else
-    #     # CPU only
     #     log "CUDA not detected. Installing PyTorch for CPU only..."
     #     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
     # fi
     
+    # For now, we install without checking nvcc (adjust as needed)
+    pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
+    
     # Install other required packages
     pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
-    pip install npy-append-array faiss-gpu h5py 
-    #omegaconf 
-    #hydra-core
+    pip install npy-append-array faiss-gpu h5py kaldi-io
+    # Optional: omegaconf, hydra-core (if needed by your workflow)
     
-    # Install kaldi-io separately (often used with wav2vec)
-    pip install kaldi-io
-
     log "PyTorch and related packages installed successfully."
 }
 
@@ -145,7 +144,6 @@ install_fairseq() {
     log "Cloning and installing fairseq..."
     cd "$INSTALL_ROOT"
     
-    # Activate virtual environment
     source "$VENV_PATH/bin/activate"
     
     if [ -d "$FAIRSEQ_ROOT" ]; then
@@ -158,13 +156,9 @@ install_fairseq() {
         cd "$FAIRSEQ_ROOT"
     fi
     
-    # Install additional dependencies
     pip install sacrebleu==1.5.1 requests regex sacremoses
-
-    # Install fairseq
     pip install --editable ./
     
-    # Install additional requirements for wav2vec
     if [ -f "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt" ]; then
         pip install -r "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
     fi
@@ -173,12 +167,11 @@ install_fairseq() {
     log "fairseq installed successfully."
 }
 
-# Step 5: Install RVAD for audio silence removal
+# Step 5: Install rVADfast for audio silence removal
 install_rVADfast() {
     log "Cloning and installing rVADfast..."
     cd "$INSTALL_ROOT"
     
-    # Activate virtual environment
     source "$VENV_PATH/bin/activate"
 
     if [ -d "$RVADFAST_ROOT" ]; then
@@ -191,10 +184,7 @@ install_rVADfast() {
         cd "$RVADFAST_ROOT"
     fi
 
-    # Install dependencies for rVADfast
     pip install numpy scipy soundfile
-    
-    # Make sure source directory exists
     mkdir -p "$RVADFAST_ROOT/src"
     
     log "rVADfast installed successfully."
@@ -212,7 +202,6 @@ install_kenlm() {
         git clone https://github.com/kpu/kenlm.git "$KENLM_ROOT"
     fi
     
-    # Build KenLM
     cd "$KENLM_ROOT"
     if [ -d "build" ]; then
         log "KenLM build directory already exists. Skipping build step."
@@ -223,25 +212,22 @@ install_kenlm() {
         make -j $(nproc)
     fi
     
-    # Install Python bindings for KenLM
     source "$VENV_PATH/bin/activate"
     pip install https://github.com/kpu/kenlm/archive/master.zip
     
     log "KenLM built successfully."
 }
 
-# Step 7: Install Flashlight
+# Step 7: Install Flashlight and Flashlight-Sequence
 install_flashlight() {
     log "Installing flashlight..."
     cd "$INSTALL_ROOT"
     
-    # Activate virtual environment
     source "$VENV_PATH/bin/activate"
 
     log "Installing flashlight-text..."
     pip install flashlight-text
 
-    log "Installing flashlight-sequence..."
     if [ -d "$INSTALL_ROOT/sequence" ]; then
         log "Flashlight sequence repository already exists. Updating..."
         cd "$INSTALL_ROOT/sequence"
@@ -257,18 +243,15 @@ install_flashlight() {
     log "Flashlight installed successfully."
 }
 
-# Step 8: Install pykaldi
+# Step 8: Install PyKaldi
 install_pykaldi() {
     log "Installing pykaldi..."
     cd "$INSTALL_ROOT"
     
-    # Activate virtual environment
     source "$VENV_PATH/bin/activate"
 
-    # Install necessary Python dependencies
     pip install numpy pyparsing ninja wheel setuptools cython
 
-    # Clone pykaldi if not already exists
     if [ -d "$PYKALDI_ROOT" ]; then
         log "PyKaldi repository already exists. Updating..."
         cd "$PYKALDI_ROOT"
@@ -279,24 +262,16 @@ install_pykaldi() {
         cd "$PYKALDI_ROOT"
     fi
 
-    # Install dependencies
     cd "$PYKALDI_ROOT/tools"
     ./check_dependencies.sh
-    
-    # Build protobuf if needed
     ./install_protobuf.sh
-    
-    # Build clif
     ./install_clif.sh
 
-    # Install Kaldi 
     cd "$PYKALDI_ROOT/tools"
     sudo apt-get install -y python2.7  # Kaldi build system may require Python 2
-    
-    # Make sure we have MKL for better performance
+
     ./install_mkl.sh
-    
-    # Build Kaldi with PyKaldi patch
+
     if [ ! -d "$KALDI_ROOT" ]; then
         log "Cloning and building Kaldi for PyKaldi..."
         ./install_kaldi.sh
@@ -304,7 +279,6 @@ install_pykaldi() {
         log "Kaldi already exists at $KALDI_ROOT"
     fi
 
-    # Build PyKaldi and wheel
     cd "$PYKALDI_ROOT"
     python setup.py install
     python setup.py bdist_wheel
@@ -316,15 +290,12 @@ install_pykaldi() {
 download_pretrained_model() {
     log "Downloading pre-trained wav2vec model..."
     
-    # Create directory for pre-trained models
     mkdir -p "$INSTALL_ROOT/pre-trained"
     cd "$INSTALL_ROOT/pre-trained"
     
-    # Check if model already exists
     if [ -f "$INSTALL_ROOT/pre-trained/wav2vec_vox_new.pt" ]; then
         log "Pre-trained model already exists. Skipping download."
     else
-        # Download pre-trained wav2vec model
         wget https://dl.fbaipublicfiles.com/fairseq/wav2vec/wav2vec_vox_new.pt
     fi
     
@@ -335,26 +306,22 @@ download_pretrained_model() {
 download_languageIdentification_model() {
     log "Downloading language identification model..."
     
-    # Create directory for language ID models
     mkdir -p "$INSTALL_ROOT/lid_model"
     cd "$INSTALL_ROOT/lid_model"
     
-    # Check if model already exists
     if [ -f "$INSTALL_ROOT/lid_model/lid.176.bin" ]; then
         log "LID model already exists. Skipping download."
     else
-        # Download FastText language identification model
         wget https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
     fi
 
-    # Install FastText for Python
     source "$VENV_PATH/bin/activate"
     pip install fasttext
     
     log "Language identification model downloaded successfully."
 }
 
-# Create a configuration file
+# Step 11: Create a configuration file
 create_config_file() {
     log "Creating a configuration file..."
     
@@ -385,39 +352,34 @@ export PYTHONPATH="\$FAIRSEQ_ROOT:\$PYKALDI_ROOT:\$PYTHONPATH"
 
 # Function to activate the environment
 activate_wav2vec_env() {
-    source "$VENV_PATH/bin/activate"
+    source "\$VENV_PATH/bin/activate"
     echo "Wav2Vec environment activated."
 }
 
-# Export the function
 export -f activate_wav2vec_env
 EOF
-    
-    # Make the config file executable
+
     chmod +x "$INSTALL_ROOT/wav2vec_config.sh"
     
     log "Configuration file created at $INSTALL_ROOT/wav2vec_config.sh"
     log "To use, run: source $INSTALL_ROOT/wav2vec_config.sh"
 }
 
-# Create a simple test script to verify installation
+# Step 12: Create a simple test script to verify installation
 create_test_script() {
     log "Creating a test script..."
     
     cat > "$INSTALL_ROOT/test_installation.py" << EOF
 #!/usr/bin/env python3
-
 """
 Test script to verify Wav2Vec installation and dependencies
 """
-
-import sys
 import os
 import importlib
 
 def check_module(name):
     try:
-        module = importlib.import_module(name)
+        importlib.import_module(name)
         print(f"✅ {name} installed successfully")
         return True
     except ImportError as e:
@@ -426,27 +388,22 @@ def check_module(name):
 
 def main():
     print("Testing Wav2Vec dependencies installation...")
-    
-    # Check core Python packages
     modules = [
         "torch", "numpy", "scipy", "tqdm", "sentencepiece", 
         "soundfile", "librosa", "kenlm", "fairseq", "tensorboardX",
         "fasttext", "flashlight_text", "flashlight.sequence.criteria"
     ]
-    
     success = 0
     for module in modules:
         if check_module(module):
             success += 1
-    
-    # Try to import a pre-trained wav2vec model
+
     try:
         import torch
         import fairseq
         model_path = os.path.join(os.environ.get("INSTALL_ROOT", ""), "pre-trained", "wav2vec_vox_new.pt")
         if os.path.exists(model_path):
             print(f"✅ Pre-trained model exists at {model_path}")
-            # Optionally, try to load the model to verify it works
             model = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_path])
             print("✅ Model loaded successfully")
         else:
@@ -459,7 +416,7 @@ def main():
 if __name__ == "__main__":
     main()
 EOF
-    
+
     chmod +x "$INSTALL_ROOT/test_installation.py"
     
     log "Test script created at $INSTALL_ROOT/test_installation.py"
@@ -467,7 +424,6 @@ EOF
 }
 
 # ==================== MAIN EXECUTION ====================
-
 main() {
     log "Starting Wav2Vec environment setup..."
     
@@ -476,7 +432,6 @@ main() {
     setup_venv
     install_fairseq
     install_pytorch
-    
     install_kenlm
     install_rVADfast
     install_flashlight
