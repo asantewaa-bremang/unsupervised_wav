@@ -145,6 +145,9 @@ install_fairseq() {
     cd "$INSTALL_ROOT"
     
     source "$VENV_PATH/bin/activate"
+
+    #changing my pip version to this 
+    pip install pip == 24
     
     if [ -d "$FAIRSEQ_ROOT" ]; then
         log "fairseq repository already exists. Updating..."
