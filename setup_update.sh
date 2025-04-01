@@ -156,12 +156,12 @@ install_fairseq() {
         cd "$FAIRSEQ_ROOT"
     fi
     
-    pip install sacrebleu==1.5.1 requests regex sacremoses
+    # pip install sacrebleu==1.5.1 requests regex sacremoses
     pip install --editable ./
     
-    if [ -f "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt" ]; then
-        pip install -r "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
-    fi
+    # if [ -f "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt" ]; then
+    #     pip install -r "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
+    # fi
     
     cd "$INSTALL_ROOT"
     log "fairseq installed successfully."
