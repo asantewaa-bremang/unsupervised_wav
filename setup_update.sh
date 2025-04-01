@@ -428,13 +428,15 @@ main() {
     log "Starting Wav2Vec environment setup..."
     
     create_dirs
-    install_system_deps
+    
     setup_venv
     install_fairseq
+    install_flashlight
+    install_system_deps
     install_pytorch
     install_kenlm
     install_rVADfast
-    install_flashlight
+    
     install_pykaldi
     download_pretrained_model
     download_languageIdentification_model
