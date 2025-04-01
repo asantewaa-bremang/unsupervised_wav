@@ -256,14 +256,14 @@ install_pykaldi()
 
     #build kaldi 
     deactivate
-    # sudo apt-get install python2.7
+    sudo apt-get install python2.7
         source "$VENV_PATH/bin/activate"
         git clone -b pykaldi_02 https://github.com/pykaldi/kaldi.git
         cd kaldi/tools
         git pull
        
         cd ../..
-    #     # sudo ./install_mkl.sh
+        sudo ./install_mkl.sh
         
         ./install_kaldi.sh
         cd ..
