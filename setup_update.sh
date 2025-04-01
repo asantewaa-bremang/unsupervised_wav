@@ -118,19 +118,20 @@ install_pytorch() {
     source "$VENV_PATH/bin/activate"
     
     # Install PyTorch with CUDA support if available
-    if command_exists nvcc; then
-        # CUDA is available
-        log "CUDA detected. Installing PyTorch with CUDA support..."
-        pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
-    else
-        # CPU only
-        log "CUDA not detected. Installing PyTorch for CPU only..."
-        pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-    fi
+    # if command_exists nvcc; then
+    #     # CUDA is available
+    #     log "CUDA detected. Installing PyTorch with CUDA support..."
+    #     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
+    # else
+    #     # CPU only
+    #     log "CUDA not detected. Installing PyTorch for CPU only..."
+    #     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
+    # fi
     
     # Install other required packages
     pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
-    pip install npy-append-array faiss-gpu h5py omegaconf 
+    pip install npy-append-array faiss-gpu h5py 
+    #omegaconf 
     #hydra-core
     
     # Install kaldi-io separately (often used with wav2vec)
