@@ -66,9 +66,6 @@ install_system_deps() {
             libatlas-base-dev \
             libfftw3-dev \
             libopenblas-dev \
-            python${PYTHON_VERSION} \
-            python${PYTHON_VERSION}-dev \
-            python${PYTHON_VERSION}-venv \
             pip \
             git \
             wget \
