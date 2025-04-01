@@ -188,7 +188,7 @@ install_kenlm() {
     cd "$KENLM_ROOT"
     if [ -d "build" ]; then
         log "KenLM build directory already exists. Skipping build step."
-    else
+    else  
         mkdir -p build
         cd build
         cmake ..
@@ -357,9 +357,10 @@ EOF
 main() {
     create_dirs
     setup_venv
-    install_fairseq
-    log "Starting Wav2Vec environment setup..."
     
+    log "Starting Wav2Vec environment setup..."
+    install_fairseq
+    install_kenlm
     
     # install_system_deps
     install_rVADfast
@@ -367,7 +368,7 @@ main() {
     install_flashlight
     install_pykaldi
     
-    install_kenlm
+    
     download_pretrained_model
     download_languageIdentification_model
     create_config_file
