@@ -248,8 +248,9 @@ install_flashlight() {
     export USE_CUDA=1
     cmake -S . -B build
     cmake --build build --parallel
-    cd build && cd .. # run tests
-    cmake --install build
+    cd build && cd .. # run test
+sudo cmake --install build
+
     
     log "Flashlight installed successfully."
 }
