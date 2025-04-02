@@ -16,7 +16,7 @@ INSTALL_ROOT="$HOME/unsupervised_wav"
 FAIRSEQ_ROOT="$INSTALL_ROOT/fairseq"
 KENLM_ROOT="$INSTALL_ROOT/kenlm"
 VENV_PATH="$INSTALL_ROOT/venv"
-KALDI_ROOT="$INSTALL_ROOT/kaldi"
+KALDI_ROOT="$INSTALL_ROOT/pykaldi/tools/kaldi"
 RVADFAST_ROOT="$INSTALL_ROOT/rVADfast"
 PYKALDI_ROOT="$INSTALL_ROOT/pykaldi"
 
@@ -309,6 +309,8 @@ eval "$(pyenv init - bash)"
 
     sudo ./install_mkl.sh
 
+    sudo apt-get update
+    sudo apt-get install sox subversion
     if [ ! -d "$KALDI_ROOT" ]; then
         log "Cloning and building Kaldi for PyKaldi..."
         ./install_kaldi.sh
