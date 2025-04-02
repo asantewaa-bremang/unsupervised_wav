@@ -278,6 +278,10 @@ install_pykaldi() {
     ./install_protobuf.sh
     sudo apt update
     sudo apt install -y libprotobuf-dev protobuf-compiler
+
+    #setting up pyenv to tackle errors 
+    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10
+    pyenv global 3.10.6
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
