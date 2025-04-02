@@ -286,6 +286,7 @@ install_pykaldi() {
 
     cd "$PYKALDI_ROOT/tools"
     ./check_dependencies.sh
+    pip uninstall protobuf
     ./install_protobuf.sh
     sudo apt update
     sudo apt install -y libprotobuf-dev protobuf-compiler
