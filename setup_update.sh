@@ -301,7 +301,7 @@ eval "$(pyenv init - bash)"
     env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.16
     pyenv global 3.10.16
     pip install protobuf #this installs the python version 
-    pip install 
+    pip install pyparsing
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
