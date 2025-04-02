@@ -200,6 +200,14 @@ install_rVADfast() {
 install_kenlm() {
     log "Cloning and building KenLM..."
     cd "$INSTALL_ROOT"
+
+    sudo apt update
+    sudo apt install libeigen3-dev
+
+    sudo apt update
+sudo apt install libboost-all-dev
+
+
     
     if [ -d "$KENLM_ROOT" ]; then
         log "KenLM repository already exists."
