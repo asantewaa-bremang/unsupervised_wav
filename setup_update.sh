@@ -24,7 +24,7 @@ PYKALDI_ROOT="$INSTALL_ROOT/pykaldi"
 CUDA_VERSION="11.7"  # Options: 10.2, 11.3, 11.6, 11.7, etc.
 
 # Python version
-PYTHON_VERSION="3.10"  # Options: 3.7, 3.8, 3.9, 3.10
+PYTHON_VERSION="3.10.16"  # Options: 3.7, 3.8, 3.9, 3.10
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -287,13 +287,21 @@ install_pykaldi() {
     cd "$PYKALDI_ROOT/tools"
     ./check_dependencies.sh
     pip uninstall protobuf
+     pip install pyparsing
     ./install_protobuf.sh
+    
     sudo apt update
     sudo apt install -y libprotobuf-dev protobuf-compiler
 
     #setting up pyenv to tackle errors 
-    # env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10
-    # pyenv global 3.10.6
+    curl -fsSL https://pyenv.run | bash
+    export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.16
+    pyenv global 3.10.16
+    pip install protobuf #this installs the python version 
+    pip install 
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
