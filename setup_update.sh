@@ -319,6 +319,7 @@ eval "$(pyenv init - bash)"
     fi
 
     cd "$PYKALDI_ROOT"
+    pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
     python setup.py install
     
     log "PyKaldi installed successfully."
