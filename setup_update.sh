@@ -307,7 +307,7 @@ eval "$(pyenv init - bash)"
     cd "$PYKALDI_ROOT/tools"
     sudo apt-get install -y python2.7  # Kaldi build system may require Python 2
 
-    ./install_mkl.sh
+    sudo ./install_mkl.sh
 
     if [ ! -d "$KALDI_ROOT" ]; then
         log "Cloning and building Kaldi for PyKaldi..."
