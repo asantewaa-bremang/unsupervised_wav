@@ -24,7 +24,7 @@ PYKALDI_ROOT="$INSTALL_ROOT/pykaldi"
 CUDA_VERSION="11.7"  # Options: 10.2, 11.3, 11.6, 11.7, etc.
 
 # Python version
-PYTHON_VERSION="3.10.16"  # Options: 3.7, 3.8, 3.9, 3.10
+PYTHON_VERSION="3.10"  # Options: 3.7, 3.8, 3.9, 3.10
 
 # ==================== HELPER FUNCTIONS ====================
 
