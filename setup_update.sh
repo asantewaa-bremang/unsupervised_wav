@@ -276,6 +276,8 @@ install_pykaldi() {
     cd "$PYKALDI_ROOT/tools"
     ./check_dependencies.sh
     ./install_protobuf.sh
+    sudo apt update
+    sudo apt install -y libprotobuf-dev protobuf-compiler
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
