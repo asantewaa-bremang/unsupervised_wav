@@ -294,6 +294,7 @@ install_pykaldi() {
     ./check_dependencies.sh
     pip uninstall protobuf
      pip install pyparsing
+    source "$VENV_PATH/bin/activate"
     ./install_protobuf.sh
     
     sudo apt update
@@ -303,6 +304,7 @@ install_pykaldi() {
     
     # pip install protobuf #this installs the python version 
     # pip install pyparsing
+    source "$VENV_PATH/bin/activate"
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
@@ -312,6 +314,7 @@ install_pykaldi() {
 
     sudo apt-get update
     sudo apt-get install sox subversion
+    source "$VENV_PATH/bin/activate"
     if [ ! -d "$KALDI_ROOT" ]; then
         log "Cloning and building Kaldi for PyKaldi..."
         ./install_kaldi.sh
@@ -321,6 +324,7 @@ install_pykaldi() {
 
     cd "$PYKALDI_ROOT"
     # pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
+    source "$VENV_PATH/bin/activate"
     python setup.py install
     
     log "PyKaldi installed successfully."
