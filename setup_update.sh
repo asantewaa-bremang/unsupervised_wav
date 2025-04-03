@@ -96,6 +96,12 @@ install_system_deps() {
 # Step 2: Set up Python virtual environment
 setup_venv() {
     log "Setting up Python virtual environment..."
+    curl -fsSL https://pyenv.run | bash
+    export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - bash)"
+    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.16
+    pyenv global 3.10.16
     
     if [ -d "$VENV_PATH" ]; then
         log "Virtual environment already exists at $VENV_PATH"
@@ -294,14 +300,9 @@ install_pykaldi() {
     sudo apt install -y libprotobuf-dev protobuf-compiler
 
     #setting up pyenv to tackle errors 
-    curl -fsSL https://pyenv.run | bash
-    export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init - bash)"
-    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.16
-    pyenv global 3.10.16
-    pip install protobuf #this installs the python version 
-    pip install pyparsing
+    
+    # pip install protobuf #this installs the python version 
+    # pip install pyparsing
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
@@ -319,7 +320,7 @@ eval "$(pyenv init - bash)"
     fi
 
     cd "$PYKALDI_ROOT"
-    pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
+    # pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
     python setup.py install
     
     log "PyKaldi installed successfully."
