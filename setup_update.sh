@@ -49,53 +49,10 @@ create_dirs() {
 
 # ==================== SETUP STEPS ====================
 
-# Step 1: Install system dependencies
-install_system_deps() {
-    log "Installing system dependencies..."
-
-    if command_exists apt-get; then
-        sudo apt-get update
-
-        sudo apt-get install -y \
-            build-essential \
-            cmake \
-            libboost-all-dev \
-            libeigen3-dev \
-            libatlas-base-dev \
-            libfftw3-dev \
-            libopenblas-dev \
-            python3-pip \
-            python3-venv \
-            git \
-            wget \
-            zlib1g-dev \
-            automake \
-            autoconf \
-            libtool \
-            subversion \
-            sox \
-            libsox-dev \
-            libsox-fmt-all \
-            flac \
-            ffmpeg \
-            libprotobuf-dev \
-            protobuf-compiler \
-            bzip2 \
-            gfortran \
-            libbz2-dev \
-            liblzma-dev
-
-    else
-        log "ERROR: Unsupported package manager. Please install dependencies manually."
-        exit 1
-    fi
-
-    log "System dependencies installed successfully."
-}
-
 # Step 2: Set up Python virtual environment
 setup_venv() {
     log "Setting up Python virtual environment..."
+     #setting up pyenv to tackle linkage errors, protobuf requires a python environment which is not static 
     curl -fsSL https://pyenv.run | bash
     export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
@@ -125,20 +82,13 @@ install_pytorch() {
     
     source "$VENV_PATH/bin/activate"
     
-    # Uncomment the following block if you want CUDA support (ensure nvcc exists)
-    # if command_exists nvcc; then
-    #     log "CUDA detected. Installing PyTorch with CUDA support..."
-    #     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
-    # else
-    #     log "CUDA not detected. Installing PyTorch for CPU only..."
-    #     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu
-    # fi
+   
     
     # For now, we install without checking nvcc (adjust as needed)
     pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
     
     # Install other required packages
-    pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
+    pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging soundfile
     pip install npy-append-array faiss-gpu h5py kaldi-io
     # Optional: omegaconf, hydra-core (if needed by your workflow)
     
@@ -154,9 +104,7 @@ install_fairseq() {
 
     #changing my pip version to this 
     
-    pip install --upgrade pip==24
-
-# Your other commands here...
+    # pip install --upgrade pip==24
 
     if [ -d "$FAIRSEQ_ROOT" ]; then
         log "fairseq repository already exists. Updating..."
@@ -168,12 +116,11 @@ install_fairseq() {
         cd "$FAIRSEQ_ROOT"
     fi
     
-    # pip install sacrebleu==1.5.1 requests regex sacremoses
     pip install --editable ./
     
-    # if [ -f "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt" ]; then
-    #     pip install -r "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
-    # fi
+    if [ -f "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt" ]; then
+        pip install -r "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
+    fi
     
     cd "$INSTALL_ROOT"
     log "fairseq installed successfully."
@@ -196,7 +143,7 @@ install_rVADfast() {
         cd "$RVADFAST_ROOT"
     fi
 
-    pip install numpy scipy soundfile
+   
     mkdir -p "$RVADFAST_ROOT/src"
     
     log "rVADfast installed successfully."
@@ -211,10 +158,8 @@ install_kenlm() {
     sudo apt install libeigen3-dev
 
     sudo apt update
-sudo apt install libboost-all-dev
+    sudo apt install libboost-all-dev
 
-
-    
     if [ -d "$KENLM_ROOT" ]; then
         log "KenLM repository already exists."
     else
@@ -263,7 +208,7 @@ install_flashlight() {
     cmake -S . -B build
     cmake --build build --parallel
     cd build && cd .. # run test
-sudo cmake --install build
+    sudo cmake --install build
 
     
     log "Flashlight installed successfully."
@@ -300,11 +245,11 @@ install_pykaldi() {
     sudo apt update
     sudo apt install -y libprotobuf-dev protobuf-compiler
 
-    #setting up pyenv to tackle errors 
     
-    # pip install protobuf #this installs the python version 
-    # pip install pyparsing
+    pip install protobuf #this installs the python version 
+   
     source "$VENV_PATH/bin/activate"
+    cp -r $PWD/protobuf/include/google $VENV_PATH/include  #this step is to load protobuf headers in roots for easy compliation of pyclif
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
@@ -323,7 +268,7 @@ install_pykaldi() {
     fi
 
     cd "$PYKALDI_ROOT"
-    # pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging 
+
     source "$VENV_PATH/bin/activate"
     python setup.py install
     
