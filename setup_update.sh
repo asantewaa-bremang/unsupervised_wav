@@ -104,7 +104,7 @@ install_fairseq() {
 
     #changing my pip version to this 
     
-    # pip install --upgrade pip==24
+    pip install --upgrade pip==24
 
     if [ -d "$FAIRSEQ_ROOT" ]; then
         log "fairseq repository already exists. Updating..."
