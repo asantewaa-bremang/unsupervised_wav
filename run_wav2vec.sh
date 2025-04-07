@@ -976,46 +976,46 @@ main() {
     log "Starting wav2vec unsupervised pipeline for $DATASET"
  
 
-   """
+   log "
    it creates a manifest files for the audio dataset
 audio format
-   """
+   "
     create_manifests 0 
 
-    '''
-      creates new manifest with silence removed
-    '''
+    
+      #creates new manifest with silence removed
+    
     create_rVADfast # identifies the sequence of silence in an audio 
     remove_silence # removes the silence sequence found by rvad in the audio
     create_manifests_nonsil 0.1
 
-'''
-   Train GANS: 
-       prepare_audio:
-       prepare_text:
-       train_gans:
-'''
+
+   # Train GANS: 
+   #     prepare_audio:
+   #     prepare_text:
+   #     train_gans:
+
     prepare_audio 
     prepare_text  
     train_gans
 
-'''
-Transcriptions from GAN model 
-     transcription_gans_viterbi: outputs phonetic transcription in variable name $GANS_OUTPUT_PHONES
-     transcription_gans_kaldi: outputs word transcription in variable name $GANS_OUTPUT_WORDS
-'''
+# '''
+# Transcriptions from GAN model 
+#      transcription_gans_viterbi: outputs phonetic transcription in variable name $GANS_OUTPUT_PHONES
+#      transcription_gans_kaldi: outputs word transcription in variable name $GANS_OUTPUT_WORDS
+# '''
     transcription_gans_viterbi  #for these we need both train and validation since the train will be used by the HMM
     transcription_gans_kaldi
 
-'''
-  Does Hidden Markov training on the outputs from the transcription_gans_viterbi and prepare_audio 
- outputs three HMM 
-'''
+# '''
+#   Does Hidden Markov training on the outputs from the transcription_gans_viterbi and prepare_audio 
+#  outputs three HMM 
+# '''
     self_training
 
-'''
-transcribes and evaluates the validation set using the best HMM Model 
-'''
+# '''
+# transcribes and evaluates the validation set using the best HMM Model 
+# '''
     transcription_HMM_phone_eval
     transcription_HMM_word_eval
     transcription_HMM_word2_eval
