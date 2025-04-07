@@ -700,6 +700,10 @@ create_manifests_nonsil() {
 #Step 5: Prepare audio file
 #a. 
 prepare_audio() {
+export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
+   export KALDI_ROOT=$KALDI_ROOT
+   export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
+   export KENLM_ROOT="$KENLM_ROOT"
 
    update_sample_pct #personal scripts added to change sample_pct variable in prepare_audio.sh
    update_batch_size #personal scripts added to change batch_size variable in prepare_audio.sh  
