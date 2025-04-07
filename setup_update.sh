@@ -91,7 +91,7 @@ install_pytorch() {
     
     # Install other required packages
     pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging soundfile
-    pip install npy-append-array faiss-gpu h5py kaldi-io
+    pip install npy-append-array faiss-gpu h5py kaldi-io g2p_en
     sudo apt install zsh
     # Optional: omegaconf, hydra-core (if needed by your workflow)
     
