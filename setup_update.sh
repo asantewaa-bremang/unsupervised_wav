@@ -93,6 +93,7 @@ install_pytorch() {
     pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging soundfile
     pip install npy-append-array faiss-gpu h5py kaldi-io g2p_en
     sudo apt install zsh
+    sudo apt install yq
     # Optional: omegaconf, hydra-core (if needed by your workflow)
     
     log "PyTorch and related packages installed successfully."
