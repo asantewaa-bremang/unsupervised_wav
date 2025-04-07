@@ -681,7 +681,7 @@ create_manifests_nonsil() {
     mark_in_progress "create_manifests_nonsil"
     
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
-        "$DATA_ROOT/processed_audio/unlabelled_audio" \
+        "$DATASETS" \
         --dest "$MANIFEST_DIR" \
         --ext wav \
         --valid-percent "$valid_pct"
