@@ -771,7 +771,7 @@ export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export PYTHONPATH="/$DIR_PATH:$PYTHONPATH"
    
 
-update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" task.text_data="$TEXT_OUTPUT/phones/" task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" model.code_penalty=2,4 model.gradient_penalty=1.5 model.smoothness_weight=0.5 checkpoint.save_dir=$RESULTS_DIR  
+update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" task.text_data="$TEXT_OUTPUT/phones/" task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" model.code_penalty=2,4 model.gradient_penalty=1.5 model.smoothness_weight=0.5 checkpoint.save_dir=$RESULTS_DIR  
 
 add_to_existing_yaml "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" optimizer.groups.discriminator.optimizer lr [0.004]
 add_to_existing_yaml "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" optimizer.groups.generator.optimizer lr [0.004]
@@ -781,7 +781,7 @@ delete_yaml_field "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.y
    PYTHONPATH=$FAIRSEQ_ROOT PREFIX=w2v_unsup_gan_xp fairseq-hydra-train \
     -m --config-dir "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan" \
     --config-name w2vu \
-    task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" \
+    task.data="$TEXT/precompute_pca512_cls128_mean_pooled" \
     task.text_data="$TEXT_OUTPUT/phones/" \
     task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" \
     common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
@@ -803,12 +803,12 @@ transcription_gans_viterbi(){
 #    
 
 #updating parameters viterbi.yaml 
-update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/viterbi.yaml" fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" fairseq.task.text_data="$TEXT_OUTPUT/phones/" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 fairseq.dataset.gen_subset=valid results_path="$GANS_OUTPUT_PHONES"
+update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/viterbi.yaml" fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" fairseq.task.text_data="$TEXT_OUTPUT/phones/" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 fairseq.dataset.gen_subset=valid results_path="$GANS_OUTPUT_PHONES"
 
 #evaluating the GANS models for validation phones
 python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-dir "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate" \
  --config-name viterbi fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
-  fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" \
+  fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" \
   fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" \
   fairseq.dataset.gen_subset=valid results_path="$GANS_OUTPUT_PHONES"
 
@@ -816,7 +816,7 @@ python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-d
 #evaluating the GANS models for validation phones
   python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-dir "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate" \
  --config-name viterbi fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
-  fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" \
+  fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" \
   fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" \
   fairseq.dataset.gen_subset=train results_path="$GANS_OUTPUT_PHONES"
 
@@ -835,12 +835,12 @@ transcription_gans_kaldi(){
    export KENLM_ROOT="$KENLM_ROOT/build/bin"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
   
-update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/kaldi.yaml" fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" kaldi_decoder_config.hlg_graph_path="$TEXT_OUTPUT/fst/phn_to_words_sil/HLGa.phn.kenlm.wrd.o40003.fst" kaldi_decoder_config.output_dict=$TEXT_OUTPUT/fst/phn_to_words_sil/kaldi_dict.kenlm.wrd.o40003.txt fairseq.task.labels="wrd" w2l_decoder="KALDI" fairseq.dataset.gen_subset=train fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 results_path="$GANS_OUTPUT_WORDS" 
+update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/kaldi.yaml" fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" kaldi_decoder_config.hlg_graph_path="$TEXT_OUTPUT/fst/phn_to_words_sil/HLGa.phn.kenlm.wrd.o40003.fst" kaldi_decoder_config.output_dict=$TEXT_OUTPUT/fst/phn_to_words_sil/kaldi_dict.kenlm.wrd.o40003.txt fairseq.task.labels="wrd" w2l_decoder="KALDI" fairseq.dataset.gen_subset=train fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 results_path="$GANS_OUTPUT_WORDS" 
 
 
 python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-dir "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate" \
  --config-name kaldi fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
-  fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" \
+  fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" \
   fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" \
   kaldi_decoder_config.hlg_graph_path="$TEXT_OUTPUT/fst/phn_to_words_sil/HLGa.phn.kenlm.wrd.o40003.fst" \
   kaldi_decoder_config.output_dict=$TEXT_OUTPUT/fst/phn_to_words_sil/kaldi_dict.kenlm.wrd.o40003.txt \
@@ -851,7 +851,7 @@ python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-d
  #evaluating for validation words
   python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-dir "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate" \
  --config-name kaldi fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
-  fairseq.task.data="$HOME/unsupervised2/gen_phonomes/precompute_pca512_cls128_mean_pooled" \
+  fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" \
   fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" \
   kaldi_decoder_config.hlg_graph_path="$TEXT_OUTPUT/fst/phn_to_words_sil/HLGa.phn.kenlm.wrd.o40003.fst" \
   kaldi_decoder_config.output_dict=$TEXT_OUTPUT/fst/phn_to_words_sil/kaldi_dict.kenlm.wrd.o40003.txt \
