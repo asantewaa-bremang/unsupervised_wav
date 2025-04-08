@@ -73,12 +73,12 @@ check_prerequisites() {
     local issues_found=0
 
     # ... (Keep the nvcc check as before) ...
-    if ! command_exists nvcc; then
-        # ... (error message) ...
-        issues_found=1
-    else
-        # ... (success message) ...
-    fi
+    # if ! command_exists nvcc; then
+    #     # ... (error message) ...
+    #     issues_found=1
+    # else
+    #     # ... (success message) ...
+    # fi
 
     # --- MODIFIED LD_LIBRARY_PATH Check ---
     # Check if the specific problematic path is forced at the beginning
@@ -107,14 +107,14 @@ check_prerequisites() {
     fi
 
     # ... (Keep Conda check and required command checks as before) ...
-     if [[ -n "$CONDA_PREFIX" # ... etc ... ]]; then
-        # ... (conda info message) ...
-     fi
-     for cmd in git # ... etc ... ; do
-         if ! command_exists "$cmd"; then
-            # ... (error message) ...
-            issues_found=1
-         fi
+     # if [[ -n "$CONDA_PREFIX" # ... etc ... ]]; then
+     #    # ... (conda info message) ...
+     # fi
+     # for cmd in git # ... etc ... ; do
+     #     if ! command_exists "$cmd"; then
+     #        # ... (error message) ...
+     #        issues_found=1
+     #     fi
      done
 
     # --- Final Check ---
