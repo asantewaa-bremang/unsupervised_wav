@@ -115,7 +115,7 @@ check_prerequisites() {
      #        # ... (error message) ...
      #        issues_found=1
      #     fi
-     done
+     # done
 
     # --- Final Check ---
     if [ "$issues_found" -ne 0 ]; then
