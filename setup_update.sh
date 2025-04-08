@@ -353,6 +353,7 @@ install_flashlight() {
     # Install the Python Bindings into the ACTIVE virtual environment
     log "Installing Flashlight sequence Python bindings into venv..."
     # This assumes setup.py or similar is generated in the build directory.
+    cd ..
     pip install . \
         # || { log "[ERROR] Failed to install Flashlight Python bindings via pip. Check build output and Flashlight docs."; exit 1; }
     log "[PASS] Flashlight Python bindings installed via pip."
