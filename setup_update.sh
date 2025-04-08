@@ -192,6 +192,7 @@ install_pytorch() {
 install_fairseq() {
     log "--- Installing fairseq ---"
     log "Activating virtual environment: $VENV_PATH"
+     pip install "pip==24.0"
     source "$VENV_PATH/bin/activate"
 
     cd "$INSTALL_ROOT"
