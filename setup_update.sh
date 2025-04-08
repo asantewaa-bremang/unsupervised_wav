@@ -122,7 +122,7 @@ install_pytorch() {
     pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url "https://download.pytorch.org/whl/${torch_cuda_suffix}"
     
     # Install other required packages
-    pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging soundfile
+    pip install "numpy<2" scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging soundfile
     pip install npy-append-array faiss-gpu h5py kaldi-io g2p_en
     sudo apt install zsh
     sudo apt install yq
