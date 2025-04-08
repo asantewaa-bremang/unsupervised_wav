@@ -20,8 +20,6 @@ KALDI_ROOT="$INSTALL_ROOT/pykaldi/tools/kaldi"
 RVADFAST_ROOT="$INSTALL_ROOT/rVADfast"
 PYKALDI_ROOT="$INSTALL_ROOT/pykaldi"
 
-# CUDA version (for PyTorch installation)
-CUDA_VERSION="11.7"  # Options: 10.2, 11.3, 11.6, 11.7, etc.
 
 # Python version
 PYTHON_VERSION="3.10"  # Options: 3.7, 3.8, 3.9, 3.10
@@ -192,34 +190,43 @@ install_pytorch() {
 
 # Step 4: Clone and install fairseq
 install_fairseq() {
-    log "Cloning and installing fairseq..."
-    cd "$INSTALL_ROOT"
-    
+    log "--- Installing fairseq ---"
+    log "Activating virtual environment: $VENV_PATH"
     source "$VENV_PATH/bin/activate"
 
-    #changing my pip version to this 
-    
-    pip install --upgrade pip==24
+    cd "$INSTALL_ROOT"
 
     if [ -d "$FAIRSEQ_ROOT" ]; then
-        log "fairseq repository already exists. Updating..."
+        log "fairseq repository already exists. Pulling latest changes..."
         cd "$FAIRSEQ_ROOT"
-        git pull
+        git pull || { log "[WARN] Failed to pull latest fairseq changes. Continuing with existing version."; }
     else
         log "Cloning fairseq repository..."
-        git clone https://github.com/facebookresearch/fairseq.git "$FAIRSEQ_ROOT"
+        git clone https://github.com/facebookresearch/fairseq.git "$FAIRSEQ_ROOT" \
+            || { log "[ERROR] Failed to clone fairseq repository."; exit 1; }
         cd "$FAIRSEQ_ROOT"
     fi
-    
-    pip install --editable ./
-    
-    if [ -f "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt" ]; then
-        pip install -r "$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
+
+    log "Installing fairseq in editable mode..."
+    # Upgrade pip first if necessary (sometimes helps with editable installs)
+    # pip install --upgrade pip
+    pip install --editable ./ \
+        || { log "[ERROR] Failed to install fairseq in editable mode."; exit 1; }
+
+    # Install wav2vec specific requirements if the file exists
+    local wav2vec_req_file="$FAIRSEQ_ROOT/examples/wav2vec/requirements.txt"
+    if [ -f "$wav2vec_req_file" ]; then
+        log "Installing wav2vec specific requirements from $wav2vec_req_file..."
+        pip install -r "$wav2vec_req_file" \
+            || { log "[WARN] Failed to install some wav2vec requirements. Check $wav2vec_req_file."; }
+    else
+        log "[INFO] No specific requirements file found at $wav2vec_req_file."
     fi
-    
-    cd "$INSTALL_ROOT"
+
     log "fairseq installed successfully."
+    deactivate
 }
+
 
 # Step 5: Install rVADfast for audio silence removal
 install_rVADfast() {
@@ -280,35 +287,91 @@ install_kenlm() {
 
 # Step 7: Install Flashlight and Flashlight-Sequence
 install_flashlight() {
-    log "Installing flashlight..."
-    sudo apt-get install pybind11-dev
+    log "--- Installing Flashlight (Text and Sequence) ---"
     cd "$INSTALL_ROOT"
-    
+
+    sudo apt-get install pybind11-dev
+
+    # Check for nvcc before proceeding with GPU build
+    # if ! command_exists nvcc; then
+    #     log "[ERROR] nvcc not found. Cannot build Flashlight Sequence with CUDA support."
+    #     exit 1
+    # fi
+    # log "[INFO] Found nvcc. Proceeding with Flashlight Sequence GPU build."
+
+    log "Activating virtual environment: $VENV_PATH"
     source "$VENV_PATH/bin/activate"
 
-    log "Installing flashlight-text..."
-    pip install flashlight-text
+    # Install flashlight-text (Python-only package)
+    log "Installing flashlight-text Python package..."
+    pip install flashlight-text \
+        || { log "[ERROR] Failed to install flashlight-text."; exit 1; }
 
-    if [ -d "$INSTALL_ROOT/sequence" ]; then
+    # Clone or update the sequence repository
+    if [ -d "$FLASHLIGHT_SEQ_ROOT" ]; then
         log "Flashlight sequence repository already exists. Updating..."
-        cd "$INSTALL_ROOT/sequence"
-        git pull
+        cd "$FLASHLIGHT_SEQ_ROOT"
+        git pull || { log "[WARN] Failed to pull latest flashlight sequence changes."; }
     else
         log "Cloning flashlight sequence repository..."
-        git clone https://github.com/flashlight/sequence.git "$INSTALL_ROOT/sequence"
-        cd "$INSTALL_ROOT/sequence"
+        git clone https://github.com/flashlight/sequence.git "$FLASHLIGHT_SEQ_ROOT" \
+            || { log "[ERROR] Failed to clone flashlight sequence."; exit 1; }
+        cd "$FLASHLIGHT_SEQ_ROOT"
     fi
-    
-    # pip install .
-    export USE_CUDA=1
-    cmake -S . -B build
-    cmake --build build --parallel
-    cd build && cd .. # run test
-    sudo cmake --install build
 
-    
-    log "Flashlight installed successfully."
+    log "Configuring and Building flashlight sequence library WITH Python bindings..."
+    # Remove old build directory for a clean state
+    rm -rf build
+    mkdir build && cd build
+
+    # Configure using CMake - ADD THE PYTHON FLAG!
+    # !!! CHECK FLASHLIGHT DOCUMENTATION FOR THE CORRECT PYTHON FLAG NAME !!!
+    # Common names: -DFLASHLIGHT_BUILD_PYTHON=ON, -DBUILD_PYTHON=ON, etc.
+    # Using -DFLASHLIGHT_BUILD_PYTHON=ON as the most likely candidate
+    local flashlight_python_flag="-DFLASHLIGHT_BUILD_PYTHON=ON" # <--- CHECK THIS FLAG!
+    log "[INFO] Using CMake flag for Python bindings: $flashlight_python_flag (Verify this is correct!)"
+
+    export USE_CUDA=1 # Set if building for CUDA
+    # Explicitly point CMake to the Python executable in the venv for robustness
+    local python_executable="$VENV_PATH/bin/python"
+    cmake .. -DCMAKE_BUILD_TYPE=Release \
+             -DPYTHON_EXECUTABLE="$python_executable" \
+             "$flashlight_python_flag" \
+             # Add other required CMake flags here (e.g., -DFLASHLIGHT_BACKEND=CUDA)
+             # Check Flashlight docs for required flags! Example: -DFLASHLIGHT_SEQUENCE_BUILD_TESTS=OFF
+             # -DCMAKE_PREFIX_PATH might be needed if dependencies aren't found
+             # -DCMAKE_PREFIX_PATH="$VENV_PATH" # Example
+         || { log "[ERROR] Flashlight sequence CMake configuration failed."; exit 1; }
+
+    # Build the C++ library AND Python bindings
+    log "Building Flashlight sequence (C++ and Python)..."
+    cmake --build . --config Release --parallel "$(nproc)" \
+        || { log "[ERROR] Flashlight sequence build failed."; exit 1; }
+
+    # Install the Python Bindings into the ACTIVE virtual environment
+    log "Installing Flashlight sequence Python bindings into venv..."
+    # This assumes setup.py or similar is generated in the build directory.
+    pip install . \
+        || { log "[ERROR] Failed to install Flashlight Python bindings via pip. Check build output and Flashlight docs."; exit 1; }
+    log "[PASS] Flashlight Python bindings installed via pip."
+
+    # Optional: Install C++ library system-wide AFTER Python install succeeds
+    log "Installing Flashlight sequence C++ library system-wide (optional)..."
+    sudo cmake --install . --config Release \
+        # || { log "[WARN] Failed to install Flashlight C++ library system-wide (sudo). Python bindings are installed."; }
+
+    cd "$INSTALL_ROOT" # Go back to install root
+    log "Flashlight installation steps completed."
+
+    # --- Re-install fairseq AFTER Flashlight bindings are in venv ---
+    log "Re-installing fairseq to ensure it picks up Flashlight bindings..."
+    install_fairseq # Call the fairseq install function again (it will activate/deactivate venv)
+
+    log "--- Flashlight Installation Finished ---"
+    # Final deactivate handled by install_fairseq
 }
+
+
 
 # Step 8: Install PyKaldi
 install_pykaldi() {
