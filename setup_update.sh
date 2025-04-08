@@ -69,6 +69,64 @@ get_system_cuda_suffix() {
     esac
 }
 
+# ==================== PREREQUISITE CHECKS ====================
+check_prerequisites() {
+    log "--- Running Prerequisite Checks ---"
+    local issues_found=0
+
+    # ... (Keep the nvcc check as before) ...
+    if ! command_exists nvcc; then
+        # ... (error message) ...
+        issues_found=1
+    else
+        # ... (success message) ...
+    fi
+
+    # --- MODIFIED LD_LIBRARY_PATH Check ---
+    # Check if the specific problematic path is forced at the beginning
+    if [[ "$LD_LIBRARY_PATH" == "/usr/local/cuda/lib64"* ]]; then
+        log "[FAIL] Prerequisite Check: LD_LIBRARY_PATH starts with '/usr/local/cuda/lib64'."
+        log "       This indicates a system misconfiguration likely caused by manual CUDA/cuDNN setup"
+        log "       or the /etc/profile.d/nvidia-env.sh script."
+        log "       This WILL cause library conflicts (like the libcudnn error)."
+        log ""
+        log "       >>> MANUAL FIX REQUIRED <<<"
+        log "       1. Edit the system file with: sudoedit /etc/profile.d/nvidia-env.sh"
+        log "          (or use: sudo nano /etc/profile.d/nvidia-env.sh)"
+        log "       2. Find the line starting with 'export LD_LIBRARY_PATH=...'"
+        log "       3. Carefully REMOVE the '/usr/local/cuda/lib64:' part from the beginning of that line."
+        log "          Example - Change:"
+        log "            export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/nccl2/lib:..."
+        log "          To:"
+        log "            export LD_LIBRARY_PATH=/usr/local/nccl2/lib:..."
+        log "       4. Save the file and exit the editor."
+        log "       5. IMPORTANT: REBOOT your system or fully LOG OUT and LOG BACK IN."
+        log "       6. Rerun this setup script AFTER rebooting/re-logging in."
+        log ""
+        issues_found=1 # Treat this as a fatal error for the script
+    else
+         log "[PASS] Prerequisite Check: LD_LIBRARY_PATH does not start with '/usr/local/cuda/lib64'."
+    fi
+
+    # ... (Keep Conda check and required command checks as before) ...
+     if [[ -n "$CONDA_PREFIX" # ... etc ... ]]; then
+        # ... (conda info message) ...
+     fi
+     for cmd in git # ... etc ... ; do
+         if ! command_exists "$cmd"; then
+            # ... (error message) ...
+            issues_found=1
+         fi
+     done
+
+    # --- Final Check ---
+    if [ "$issues_found" -ne 0 ]; then
+        log "ERROR: Prerequisite checks failed. Please address the [FAIL] items above before running the script again."
+        exit 1 # Exit the script
+    fi
+    log "--- Prerequisite Checks Passed ---"
+}
+
 # ==================== SETUP STEPS ====================
 
 # Step 2: Set up Python virtual environment
@@ -456,7 +514,7 @@ EOF
 # ==================== MAIN EXECUTION ====================
 main() {
     log "Starting Wav2Vec environment setup..."
-    
+    check_prerequisites
     create_dirs
     
     setup_venv
