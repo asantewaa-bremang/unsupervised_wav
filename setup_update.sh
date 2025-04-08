@@ -281,6 +281,7 @@ install_kenlm() {
 # Step 7: Install Flashlight and Flashlight-Sequence
 install_flashlight() {
     log "Installing flashlight..."
+    sudo apt-get install pybind11-dev
     cd "$INSTALL_ROOT"
     
     source "$VENV_PATH/bin/activate"
