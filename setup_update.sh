@@ -47,6 +47,28 @@ create_dirs() {
     mkdir -p "$INSTALL_ROOT/logs"
 }
 
+get_system_cuda_suffix() {
+    if ! command_exists nvcc; then
+        log "ERROR: nvcc (NVIDIA CUDA Compiler) not found in PATH. Cannot determine CUDA version for GPU packages."
+        exit 1
+    fi
+    local cuda_version
+    cuda_version=$(nvcc --version | sed -n 's/.*release \([0-9]\+\.[0-9]\+\).*/\1/p')
+
+    case "$cuda_version" in
+        "12.1") echo "cu121" ;;
+        "11.8") echo "cu118" ;;
+        "11.7") echo "cu117" ;;
+        "11.6") echo "cu116" ;;
+        # Add other supported versions PyTorch offers as needed
+        *)
+            log "ERROR: Detected unsupported CUDA version $cuda_version. PyTorch might not have a pre-built package."
+            log "Please check available PyTorch builds for your CUDA version."
+            exit 1
+            ;;
+    esac
+}
+
 # ==================== SETUP STEPS ====================
 
 # Step 2: Set up Python virtual environment
@@ -57,8 +79,15 @@ setup_venv() {
     export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init - bash)"
-    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.10.16
-    pyenv global 3.10.16
+py_version_full=$(python --version 2>&1)
+version=$(echo "$py_version_full" | cut -d ' ' -f 2)
+
+# Or combined:
+# version=$(python --version 2>&1 | cut -d ' ' -f 2)
+
+echo "Detected Python version: $version"
+    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install $version
+    pyenv local $version
     
     if [ -d "$VENV_PATH" ]; then
         log "Virtual environment already exists at $VENV_PATH"
@@ -79,6 +108,8 @@ eval "$(pyenv init - bash)"
 # Step 3: Install PyTorch and related packages
 install_pytorch() {
     log "Installing PyTorch and related packages..."
+
+    torch_cuda_suffix=$(get_system_cuda_suffix)
     
     source "$VENV_PATH/bin/activate"
     
@@ -87,13 +118,15 @@ install_pytorch() {
     # For now, we install without checking nvcc (adjust as needed)
     # pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
 
-    pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
+    # pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
+    pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url "https://download.pytorch.org/whl/${torch_cuda_suffix}"
     
     # Install other required packages
     pip install numpy scipy tqdm sentencepiece soundfile librosa editdistance tensorboardX packaging soundfile
     pip install npy-append-array faiss-gpu h5py kaldi-io g2p_en
     sudo apt install zsh
     sudo apt install yq
+    python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"
     # Optional: omegaconf, hydra-core (if needed by your workflow)
     
     log "PyTorch and related packages installed successfully."
