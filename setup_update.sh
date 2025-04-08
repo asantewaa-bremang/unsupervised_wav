@@ -308,6 +308,10 @@ install_pykaldi() {
 
     source "$VENV_PATH/bin/activate"
     python setup.py install
+
+    source "$VENV_PATH/bin/activate"
+    sudo pip uninstall tensorboardX
+    pip install tensorboardX
     
     log "PyKaldi installed successfully."
 }
