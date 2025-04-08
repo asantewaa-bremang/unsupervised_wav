@@ -710,7 +710,7 @@ export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    update_batch_size #personal scripts added to change batch_size variable in prepare_audio.sh  
 
 
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
 
 
    if is_completed "prepare_audio"; then
@@ -798,7 +798,7 @@ transcription_gans_viterbi(){
    export HYDRA_FULL_ERROR=1
    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 #    
 
@@ -832,7 +832,7 @@ transcription_gans_kaldi(){
    export HYDRA_FULL_ERROR=1
    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
   
 update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/kaldi.yaml" fairseq.common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" kaldi_decoder_config.hlg_graph_path="$TEXT_OUTPUT/fst/phn_to_words_sil/HLGa.phn.kenlm.wrd.o40003.fst" kaldi_decoder_config.output_dict=$TEXT_OUTPUT/fst/phn_to_words_sil/kaldi_dict.kenlm.wrd.o40003.txt fairseq.task.labels="wrd" w2l_decoder="KALDI" fairseq.dataset.gen_subset=train fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 results_path="$GANS_OUTPUT_WORDS" 
@@ -872,7 +872,7 @@ self_training()
    export HYDRA_FULL_ERROR=1
    export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 
    setup_env
@@ -900,7 +900,7 @@ transcription_HMM_phone_eval()
 {
     export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 
    
@@ -921,7 +921,7 @@ transcription_HMM_word_eval()
 {
     export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
    
  DECODE_WORD=$KALDI_ROOT/egs/kaldi_self_train/st/decode_word_step1.sh
@@ -943,7 +943,7 @@ transcription_HMM_word2_eval()
 {
     export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
-   export KENLM_ROOT="$KENLM_ROOT/build/bin"
+   export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
    
  DECODE_WORD2=$KALDI_ROOT/egs/kaldi_self_train/st/decode_word_step2.sh
