@@ -6,9 +6,11 @@ The scripts work well on a Python Pytorch virtual environment, with cuda 12.1 an
 ## How to run the project 
 the steps provided can be run in a terminal of your machine
 
-1. ./setup.sh
+1. chmod +x setup.sh
+2. ./setup.sh
 
-2. ./run_wav2vec.sh "/path/to/audio_dataset" "/path/to/unlabelled/text_dataset"
+3. chmod +x run_wav2vec.sh
+4.  ./run_wav2vec.sh "/path/to/audio_dataset" "/path/to/unlabelled/text_dataset"
    
 *Please note:* Before you run the run_wav2vec script, you  can manually edit the variable "max_update: " in this file with the path 
  unsupervised_wav/fairseq/examples/wav2vec/unsupervised/config/gan/w2vu.yaml
