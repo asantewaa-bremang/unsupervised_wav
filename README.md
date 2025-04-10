@@ -9,3 +9,8 @@ the steps provided can be run in a terminal of your machine
 1. ./setup.sh
 
 2. ./run_wav2vec.sh "/path/to/audio_dataset" "/path/to/unlabelled/text_dataset"
+   
+*Please note:* Before you run the run_wav2vec script, you  can manually edit the variable "max_update: " in this file with the path 
+ unsupervised_wav/fairseq/examples/wav2vec/unsupervised/config/gan/w2vu.yaml
+ 
+The current max_update is high so you can adjust it based on your dataset. 
