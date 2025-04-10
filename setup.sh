@@ -466,8 +466,6 @@ main() {
     install_pykaldi
     download_pretrained_model
     download_languageIdentification_model
-    create_config_file
-    create_test_script
     
     log "Setup completed successfully!"
    
