@@ -35,6 +35,11 @@ log() {
     echo "[$timestamp] $message"
 }
 
+log_1() {
+    local message="$1"
+    echo "$message"
+}
+
 # Check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
@@ -72,52 +77,31 @@ get_system_cuda_suffix() {
 check_prerequisites() {
     log "--- Running Prerequisite Checks ---"
     local issues_found=0
-
-    # ... (Keep the nvcc check as before) ...
-    # if ! command_exists nvcc; then
-    #     # ... (error message) ...
-    #     issues_found=1
-    # else
-    #     # ... (success message) ...
-    # fi
-
     # --- MODIFIED LD_LIBRARY_PATH Check ---
     # Check if the specific problematic path is forced at the beginning
     if [[ "$LD_LIBRARY_PATH" == "/usr/local/cuda/lib64"* ]]; then
-        log "[FAIL] Prerequisite Check: LD_LIBRARY_PATH starts with '/usr/local/cuda/lib64'."
-        log "       This indicates a system misconfiguration likely caused by manual CUDA/cuDNN setup"
-        log "       or the /etc/profile.d/nvidia-env.sh script."
-        log "       This WILL cause library conflicts (like the libcudnn error)."
-        log ""
-        log "       >>> MANUAL FIX REQUIRED <<<"
-        log "       1. Edit the system file with: sudoedit /etc/profile.d/nvidia-env.sh"
-        log "          (or use: sudo nano /etc/profile.d/nvidia-env.sh)"
-        log "       2. Find the line starting with 'export LD_LIBRARY_PATH=...'"
-        log "       3. Carefully REMOVE the '/usr/local/cuda/lib64:' part from the beginning of that line."
-        log "          Example - Change:"
-        log "            export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/nccl2/lib:..."
-        log "          To:"
-        log "            export LD_LIBRARY_PATH=/usr/local/nccl2/lib:..."
-        log "       4. Save the file and exit the editor."
-        log "       5. IMPORTANT: REBOOT your system or fully LOG OUT and LOG BACK IN."
-        log "       6. Rerun this setup script AFTER rebooting/re-logging in."
-        log ""
+        log_1 "[FAIL] Prerequisite Check: LD_LIBRARY_PATH starts with '/usr/local/cuda/lib64'."
+        log_1 "       This indicates a system misconfiguration likely caused by manual CUDA/cuDNN setup"
+        log_1 "       or the /etc/profile.d/nvidia-env.sh script."
+        log_1 "       This WILL cause library conflicts (like the libcudnn error)."
+        log_1 ""
+        log_1 "       >>> MANUAL FIX REQUIRED <<<"
+        log_1 "       1. Edit the system file with: sudoedit /etc/profile.d/nvidia-env.sh"
+        log_1 "          (or use: sudo nano /etc/profile.d/nvidia-env.sh)"
+        log_1 "       2. Find the line starting with 'export LD_LIBRARY_PATH=...'"
+        log_1 "       3. Carefully REMOVE the '/usr/local/cuda/lib64:' part from the beginning of that line."
+        log_1 "          Example - Change:"
+        log_1 "            export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/nccl2/lib:..."
+        log_1 "          To:"
+        log_1 "            export LD_LIBRARY_PATH=/usr/local/nccl2/lib:..."
+        log_1 "       4. Save the file and exit the editor."
+        log_1 "       5. IMPORTANT: REBOOT your system or fully LOG OUT and LOG BACK IN."
+        log_1 "       6. Rerun this setup script AFTER rebooting/re-logging in."
+        log_1 ""
         issues_found=1 # Treat this as a fatal error for the script
     else
          log "[PASS] Prerequisite Check: LD_LIBRARY_PATH does not start with '/usr/local/cuda/lib64'."
     fi
-
-    # ... (Keep Conda check and required command checks as before) ...
-     # if [[ -n "$CONDA_PREFIX" # ... etc ... ]]; then
-     #    # ... (conda info message) ...
-     # fi
-     # for cmd in git # ... etc ... ; do
-     #     if ! command_exists "$cmd"; then
-     #        # ... (error message) ...
-     #        issues_found=1
-     #     fi
-     # done
-
     # --- Final Check ---
     if [ "$issues_found" -ne 0 ]; then
         log "ERROR: Prerequisite checks failed. Please address the [FAIL] items above before running the script again."
@@ -131,16 +115,15 @@ check_prerequisites() {
 # Step 2: Set up Python virtual environment
 setup_venv() {
     log "Setting up Python virtual environment..."
+    
      #setting up pyenv to tackle linkage errors, protobuf requires a python environment which is not static 
     curl -fsSL https://pyenv.run | bash
     export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init - bash)"
-py_version_full=$(python --version 2>&1)
-version=$(echo "$py_version_full" | cut -d ' ' -f 2)
+     [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+      eval "$(pyenv init - bash)"
+     py_version_full=$(python --version 2>&1)
+     version=$(echo "$py_version_full" | cut -d ' ' -f 2)
 
-# Or combined:
-# version=$(python --version 2>&1 | cut -d ' ' -f 2)
 
 echo "Detected Python version: $version"
     env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install $version
@@ -173,9 +156,8 @@ install_pytorch() {
    
     
     # For now, we install without checking nvcc (adjust as needed)
-    # pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu${CUDA_VERSION}
-
-    # pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cu121
+    # note we need a torch version less than 2.6 to prepare audio properly 
+    
     pip install torch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 --index-url "https://download.pytorch.org/whl/${torch_cuda_suffix}"
     
     # Install other required packages
@@ -183,9 +165,8 @@ install_pytorch() {
     pip install npy-append-array faiss-gpu h5py kaldi-io g2p_en
     sudo apt install zsh
     sudo apt install yq
-    python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"
-    # Optional: omegaconf, hydra-core (if needed by your workflow)
-    
+    python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')" # we install this to efficiently use the phonemizer G2p
+
     log "PyTorch and related packages installed successfully."
 }
 
@@ -247,7 +228,6 @@ install_rVADfast() {
         cd "$RVADFAST_ROOT"
     fi
 
-   
     mkdir -p "$RVADFAST_ROOT/src"
     
     log "rVADfast installed successfully."
@@ -294,12 +274,8 @@ install_flashlight() {
 
     sudo apt-get install pybind11-dev
 
-    # Check for nvcc before proceeding with GPU build
-    # if ! command_exists nvcc; then
-    #     log "[ERROR] nvcc not found. Cannot build Flashlight Sequence with CUDA support."
-    #     exit 1
-    # fi
-    # log "[INFO] Found nvcc. Proceeding with Flashlight Sequence GPU build."
+    # Ensure  nvcc is installed to before proceeding with GPU build
+ 
 
     log "Activating virtual environment: $VENV_PATH"
     source "$VENV_PATH/bin/activate"
@@ -323,6 +299,7 @@ install_flashlight() {
 
     log "Configuring and Building flashlight sequence library WITH Python bindings..."
     # Remove old build directory for a clean state
+    
     rm -rf build
     mkdir build && cd build
 
@@ -399,7 +376,7 @@ install_pykaldi() {
 
     cd "$PYKALDI_ROOT/tools"
     ./check_dependencies.sh
-    pip uninstall protobuf
+    pip uninstall protobuf # we uninstall pip version of protobuf to be able to successfully install pykaldi's  version of protobuf
      pip install pyparsing
     source "$VENV_PATH/bin/activate"
     ./install_protobuf.sh
@@ -408,10 +385,11 @@ install_pykaldi() {
     sudo apt install -y libprotobuf-dev protobuf-compiler
 
     
-    pip install protobuf #this installs the python version 
+    pip install protobuf # we reinstall pip protobuf 
    
     source "$VENV_PATH/bin/activate"
     cp -r $PWD/protobuf/include/google $VENV_PATH/include  #this step is to load protobuf headers in roots for easy compliation of pyclif
+    
     ./install_clif.sh
 
     cd "$PYKALDI_ROOT/tools"
@@ -435,8 +413,8 @@ install_pykaldi() {
     python setup.py install
 
     source "$VENV_PATH/bin/activate"
-    sudo pip uninstall tensorboardX
-    pip install tensorboardX
+    sudo pip uninstall tensorboardX #the installation of pykaldi changes the required version of tensorboard to successfully run other versions of the script
+    pip install tensorboardX # hence we uninstall and reinstall
     
     log "PyKaldi installed successfully."
 }
@@ -476,107 +454,6 @@ download_languageIdentification_model() {
     log "Language identification model downloaded successfully."
 }
 
-# Step 11: Create a configuration file
-create_config_file() {
-    log "Creating a configuration file..."
-    
-    cat > "$INSTALL_ROOT/wav2vec_config.sh" << EOF
-#!/bin/bash
-# Wav2Vec configuration file
-# Source this file to set up environment variables
-
-# Main directories
-export FAIRSEQ_ROOT="$FAIRSEQ_ROOT"
-export KENLM_ROOT="$KENLM_ROOT"
-export VENV_PATH="$VENV_PATH"
-export KALDI_ROOT="$KALDI_ROOT"
-export PYKALDI_ROOT="$PYKALDI_ROOT"
-export RVADFAST_ROOT="$RVADFAST_ROOT"
-
-# Add KenLM binaries to PATH
-export PATH="\$KENLM_ROOT/build/bin:\$PATH"
-
-# Add rVADfast to PATH
-export PATH="\$RVADFAST_ROOT/src:\$PATH"
-
-# Add Kaldi binaries to PATH
-export PATH="\$KALDI_ROOT/src/bin:\$KALDI_ROOT/tools/openfst/bin:\$KALDI_ROOT/src/fstbin:\$KALDI_ROOT/src/lmbin:\$PATH"
-
-# Python module paths
-export PYTHONPATH="\$FAIRSEQ_ROOT:\$PYKALDI_ROOT:\$PYTHONPATH"
-
-# Function to activate the environment
-activate_wav2vec_env() {
-    source "\$VENV_PATH/bin/activate"
-    echo "Wav2Vec environment activated."
-}
-
-export -f activate_wav2vec_env
-EOF
-
-    chmod +x "$INSTALL_ROOT/wav2vec_config.sh"
-    
-    log "Configuration file created at $INSTALL_ROOT/wav2vec_config.sh"
-    log "To use, run: source $INSTALL_ROOT/wav2vec_config.sh"
-}
-
-# Step 12: Create a simple test script to verify installation
-create_test_script() {
-    log "Creating a test script..."
-    
-    cat > "$INSTALL_ROOT/test_installation.py" << EOF
-#!/usr/bin/env python3
-"""
-Test script to verify Wav2Vec installation and dependencies
-"""
-import os
-import importlib
-
-def check_module(name):
-    try:
-        importlib.import_module(name)
-        print(f"✅ {name} installed successfully")
-        return True
-    except ImportError as e:
-        print(f"❌ {name} import failed: {e}")
-        return False
-
-def main():
-    print("Testing Wav2Vec dependencies installation...")
-    modules = [
-        "torch", "numpy", "scipy", "tqdm", "sentencepiece", 
-        "soundfile", "librosa", "kenlm", "fairseq", "tensorboardX",
-        "fasttext", "flashlight_text", "flashlight.sequence.criteria"
-    ]
-    success = 0
-    for module in modules:
-        if check_module(module):
-            success += 1
-
-    try:
-        import torch
-        import fairseq
-        model_path = os.path.join(os.environ.get("INSTALL_ROOT", ""), "pre-trained", "wav2vec_vox_new.pt")
-        if os.path.exists(model_path):
-            print(f"✅ Pre-trained model exists at {model_path}")
-            model = fairseq.checkpoint_utils.load_model_ensemble_and_task([model_path])
-            print("✅ Model loaded successfully")
-        else:
-            print(f"❌ Pre-trained model not found at {model_path}")
-    except Exception as e:
-        print(f"❌ Error testing model loading: {e}")
-    
-    print(f"\nResults: {success}/{len(modules)} dependencies installed successfully")
-
-if __name__ == "__main__":
-    main()
-EOF
-
-    chmod +x "$INSTALL_ROOT/test_installation.py"
-    
-    log "Test script created at $INSTALL_ROOT/test_installation.py"
-    log "After installation, run: source $INSTALL_ROOT/wav2vec_config.sh && python $INSTALL_ROOT/test_installation.py"
-}
 
 # ==================== MAIN EXECUTION ====================
 main() {
@@ -587,7 +464,6 @@ main() {
     setup_venv
     install_fairseq
     install_flashlight
-    # install_system_deps
     install_pytorch
     install_kenlm
     install_rVADfast
@@ -599,10 +475,7 @@ main() {
     create_test_script
     
     log "Setup completed successfully!"
-    log "------------------------------------------------------"
-    log "To use this environment, run: source $INSTALL_ROOT/wav2vec_config.sh"
-    log "To test the installation, run: python $INSTALL_ROOT/test_installation.py"
-    log "------------------------------------------------------"
+   
 }
 
 # Run the main function
