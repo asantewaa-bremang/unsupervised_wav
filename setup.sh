@@ -335,11 +335,6 @@ install_flashlight() {
         # || { log "[ERROR] Failed to install Flashlight Python bindings via pip. Check build output and Flashlight docs."; exit 1; }
     log "[PASS] Flashlight Python bindings installed via pip."
 
-    # Optional: Install C++ library system-wide AFTER Python install succeeds
-    log "Installing Flashlight sequence C++ library system-wide (optional)..."
-    sudo cmake --install . --config Release \
-        # || { log "[WARN] Failed to install Flashlight C++ library system-wide (sudo). Python bindings are installed."; }
-
     cd "$INSTALL_ROOT" # Go back to install root
     log "Flashlight installation steps completed."
 
