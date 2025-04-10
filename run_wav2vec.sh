@@ -29,12 +29,9 @@ OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initiali
 
 
 # adding to system paths
-DATASETS=$1 #/path/to/unlabelled/audio_data #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-UNLABELLED_TEXT=$2 #/path/to/unlabelled_text_file #"$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt"
+DATASETS=$1 #/path/to/unlabelled/audio_data 
+UNLABELLED_TEXT=$2 #/path/to/unlabelled_text_file 
 NEW_SAMPLE_PCT=0.5
-
-# DATASETS=$DIR_PATH/data/unlabelled_audio #"$HOME/unsupervised/wav2vec-U/libri_dataset/unlabelled_audio"
-# UNLABELLED_TEXT=$HOME/unsupervised/wav2vec-U/libri_dataset/librispeech-lm-norm_4k.txt
 
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
@@ -45,15 +42,14 @@ MODEL="$DIR_PATH/pre-trained/wav2vec_vox_new.pt"
 
 # Dataset specifics
 
-DATASET="librispeech"
+DATASET_NAME="librispeech"
 
 # Output directories (will be created if they don't exist)
 MANIFEST_DIR="$DATA_ROOT/manifests"
-CLUSTERING_DIR="$DATA_ROOT/clustering/$DATASET"
-LM_DIR="$DATA_ROOT/language_models/$DATASET"
-RESULTS_DIR="$DATA_ROOT/results/$DATASET"
-CHECKPOINT_DIR="$DATA_ROOT/checkpoints/$DATASET"
-LOG_DIR="$DATA_ROOT/logs/$DATASET"
+CLUSTERING_DIR="$DATA_ROOT/clustering/$DATASET_NAME"
+RESULTS_DIR="$DATA_ROOT/results/$DATASET_NAME"
+CHECKPOINT_DIR="$DATA_ROOT/checkpoints/$DATASET_NAME"
+LOG_DIR="$DATA_ROOT/logs/$DATASET_NAME"
 TEXT_OUTPUT="$DATA_ROOT/text"
 GANS_OUTPUT_PHONES="$DATA_ROOT/transcription_phones"
 GANS_OUTPUT_WORDS="$DATA_ROOT/transcription_words"
@@ -68,11 +64,9 @@ CHECKPOINT_FILE="$CHECKPOINT_DIR/progress.checkpoint"
 # Create directories if they don't exist
 create_dirs() {
     mkdir -p "$MANIFEST_DIR" "$CLUSTERING_DIR"  \
-              "$LM_DIR" "$RESULTS_DIR" "$CHECKPOINT_DIR" "$LOG_DIR" "$GANS_OUTPUT_PHONES" \
+             "$RESULTS_DIR" "$CHECKPOINT_DIR" "$LOG_DIR" "$GANS_OUTPUT_PHONES" \
              "$TEXT_OUTPUT" "$GANS_OUTPUT_PHONES" "$ST_OUTPUT"
 }
-
-# "$FEATURES_DIR"
 
 # Log message with timestamp
 log() {
@@ -128,26 +122,7 @@ activate_venv() {
 setup_env() {
 
     export HYDRA_FULL_ERROR=1
-    # export PATH="${FAIRSEQ_ROOT}/bin:${KENLM_ROOT}/bin:${KALDI_ROOT}/src/bin:${RVAD_ROOT}:$PATH"
-    # export LD_LIBRARY_PATH="${KALDI_ROOT}/src/lib:${KENLM_ROOT}/lib:$LD_LIBRARY_PATH"
     export LD_LIBRARY_PATH="${KALDI_ROOT}/src/lib:${KENLM_ROOT}/lib:${LD_LIBRARY_PATH:-}"
-
-}
-
-add_path()
-{
-    export PYTHONPATH="$RVADFAST_PATH:$PYTHONPATH"
-    
-    # Make it permanent by adding to ~/.bashrc if it's not already there
-    if ! grep -q "$RVADFAST_PATH" ~/.bashrc; then
-        echo "export PYTHONPATH=\"$RVADFAST_PATH:\$PYTHONPATH\"" >> ~/.bashrc
-        echo "Added $RVADFAST_PATH to PYTHONPATH in ~/.bashrc"
-    else
-        echo "$RVADFAST_PATH is already in ~/.bashrc"
-    fi
-    
-    # Reload ~/.bashrc so changes take effect immediately
-    source ~/.bashrc
 
 }
 
@@ -294,8 +269,6 @@ delete_yaml_field() {
   fi
 }
 
-
-
 #script is used to update a yaml file 
 update_yaml_config() {
     if [ "$#" -lt 2 ]; then
@@ -395,7 +368,7 @@ comment_line() {
         echo "Found line in $file: $line_to_find"
 
         # Backup the file before modification
-        cp "$file" "$file.bak"
+        # cp "$file" "$file.bak"
 
         # Comment out the matching line
         sed -i "s|^$escaped_line_to_find|# $escaped_line_to_find|" "$file"
@@ -406,85 +379,76 @@ comment_line() {
     fi
 }
 
-
-
-rewrite_file() {
+get_best_path_pipeline() {
     local input_file="$1"
-    local temp_file="temp_file.py"
-    # Step 1: Remove any "f args.gt_tra:" prefixes from every line.
-    sed -i 's/^f args\.gt_tra:[[:space:]]*//' "$input_file"
 
-    # Step 2: Use awk to comment out the block starting with "if args.gt_tra:".
-    # It finds a line (ignoring leading spaces) that starts with "if args.gt_tra:" and
-    # then comments out that line and every subsequent line that is more indented than it.
-    awk '
-    BEGIN { in_block=0; base_indent="" }
+    # --- Input Validation ---
+    if [ -z "$input_file" ]; then
+        echo "Usage: get_best_path_pipeline <input_log_file>" >&2
+        return 1
+    fi
+    if [ ! -r "$input_file" ]; then
+        echo "Error: File '$input_file' not found or not readable." >&2
+        return 1
+    fi
+    # --- End Input Validation ---
+
+    # 1. Filter lines containing both "INFO:root:" and "wer [...]%"
+    #    Use grep -E for extended regex OR chain two greps. Chaining is safer.
+    local filtered_lines
+    filtered_lines=$(grep 'INFO:root:' "$input_file" | grep 'wer [0-9.]*%' || true)
+    # '|| true' prevents script exit if grep finds nothing
+
+    # Check if any lines matched
+    if [ -z "$filtered_lines" ]; then
+         # echo "Warning: No lines matching required format found." >&2 # Optional warning
+         return 0 # Indicate success, but no result found
+    fi
+
+    # 2. Transform matching lines to "WER PATH" format using POSIX awk
+    #    This awk script extracts WER and path from the already filtered lines.
+    local transformed_lines
+    transformed_lines=$(echo "$filtered_lines" | awk '
     {
-      # Check if the current line starts the block.
-      if (in_block == 0 && $0 ~ /^[[:space:]]*if args\.gt_tra:/) {
-        # Capture the leading spaces (indentation).
-        match($0, /^([[:space:]]*)if args\.gt_tra:/, arr);
-        base_indent = arr[1];
-        in_block = 1;
-        # Print the line with a "#" inserted after the base indentation.
-        print base_indent "#" substr($0, length(base_indent)+1);
-        next;
-      }
-      # If inside the block, comment lines that are further indented than base_indent.
-      if (in_block == 1) {
-        if ($0 ~ "^" base_indent "[[:space:]]") {
-          print base_indent "#" substr($0, length(base_indent)+1);
-          next;
-        } else {
-          # Block ended when a line is not indented further.
-          in_block = 0;
-        }
-      }
-      # Print lines outside the block unchanged.
-      print;
-    }
-    # ' "$input_file" >"$temp_file"
-    
-    mv $temp_file $input_file
+        # Find WER using match() and substr()
+        if (match($0, /wer [0-9.]+\%/)) {
+             wer_match_str = substr($0, RSTART, RLENGTH); # e.g., "wer 71.71%"
+             if (match(wer_match_str, /[0-9.]+/)) {
+                 current_wer = substr(wer_match_str, RSTART, RLENGTH);
+             } else { next; } # Skip if number extraction fails
+        } else { next; } # Skip if WER pattern not found
 
-   
+        # Find Path using match() and substr()
+        if (match($0, /INFO:root:[^:]+:/)) {
+            path_match_str = substr($0, RSTART, RLENGTH); # e.g., "INFO:root:/path:"
+            sub(/^INFO:root:/, "", path_match_str);
+            sub(/:$/, "", path_match_str);
+            current_path = path_match_str;
+        } else { next; } # Skip if path pattern not found
 
-    # Replace the original file with the updated file.
-   
-    echo "File '$input_file' has been updated with the commented block."
+        # Print in "WER PATH" format
+        print current_wer, current_path;
+    }')
+
+    if [ -z "$transformed_lines" ]; then
+        # This might happen if extraction failed even after initial grep
+        # echo "Warning: Could not extract WER/Path from matching lines." >&2
+        return 0
+    fi
+
+    # 3. Sort numerically based on the first field (WER)
+    # 4. Take the first line (lowest WER)
+    local best_line
+    best_line=$(echo "$transformed_lines" | sort -n -k1,1 | head -n 1)
+
+    # 5. Extract the path (everything after the first space)
+    #    Using awk is robust for paths with spaces
+    local best_path
+    best_path=$(echo "$best_line" | awk '{ $1=""; sub(/^ /,""); print }')
+
+    echo "$best_path"
+    return 0
 }
-
-
-get_best_path() {
-    local input_file="$1"
-    awk '
-    BEGIN {
-        best_wer = 1e9;  # Initialize with a very high value.
-        best_path = "";
-    }
-    {
-        # Extract the WER value using a regex match.
-        if (match($0, /wer ([0-9.]+)%/, arr)) {
-            wer = arr[1] + 0;  # Convert to a number.
-        } else {
-            next;
-        }
-        # Extract the file path from the INFO:root: portion.
-        if (match($0, /INFO:root:([^:]+):/, arr2)) {
-            path = arr2[1];
-        }
-        # If the current WER is lower than the best so far, update best.
-        if (wer < best_wer) {
-            best_wer = wer;
-            best_path = path;
-        }
-    }
-    END {
-        print best_path;
-    }
-    ' "$input_file"
-}
-
 
 
 update_script_with_condition() {
@@ -541,42 +505,6 @@ with open(script_file, 'w') as f:
         f.writelines(new_lines)
 
 print(f"Modification completed. {script_file} updated.")
-EOF
-}
-
-
-
-
-# Function to comment out lines in a file that match a given regex pattern
-comment_line_in_file() {
-    local file="$1"         # The file to modify
-    local pattern="$2"      # The regex pattern to match the line(s) you want to comment
-
-    # Create a backup of the original file
-    cp "$file" "$file.bak"
-    echo "Backup created at ${file}.bak"
-
-    python3 <<EOF
-    import re
-
-    filename = "$file"
-    pattern = re.compile(r"$pattern")
-
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-
-    new_lines = []
-    for line in lines:
-        # If the line matches the pattern and is not already commented out
-        if pattern.search(line) and not line.lstrip().startswith("#"):
-            new_lines.append("# " + line)
-        else:
-            new_lines.append(line)
-
-    with open(filename, 'w') as f:
-        f.writelines(new_lines)
-
-    print(f"Modification completed. {filename} updated.")
 EOF
 }
 
@@ -747,7 +675,7 @@ prepare_text() {
         return 0
     fi
 
-    log "audio preparation"
+    log "audio preparation."
     mark_in_progress "audio preparation"
     replace_std_endl $ADD_SELF_LOOP_SIMPLE
     zsh "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/prepare_text.sh" en $UNLABELLED_TEXT $TEXT_OUTPUT $MIN_PHONES G2P $FASTTEXT_LIB_MODEL 0.25
@@ -769,6 +697,15 @@ export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
    export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH="/$DIR_PATH:$PYTHONPATH"
+
+
+   if is_completed "train_gans"; then
+        log "Skipping gans training  (already completed)"
+        return 0
+    fi
+
+    log "gans training."
+    mark_in_progress "gans training"
    
 
 update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" task.text_data="$TEXT_OUTPUT/phones/" task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" model.code_penalty=2,4 model.gradient_penalty=1.5 model.smoothness_weight=0.5 checkpoint.save_dir=$RESULTS_DIR  
@@ -789,7 +726,13 @@ delete_yaml_field "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.y
     model.smoothness_weight=0.5,0.75,1.0 'common.seed=range(0,5)' \
     checkpoint.save_dir=$RESULTS_DIR 2>&1 | tee $RESULTS_DIR/training1.log
 
-
+   if [ $? -eq 0 ]; then
+        mark_completed "train_gans"
+        log "gans trained successfully"
+    else
+        log "ERROR: gans training failed"
+        exit 1
+    fi
 }
 
 #=================Evaluating the GANS =============================================
@@ -800,7 +743,14 @@ transcription_gans_viterbi(){
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
    export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
-#    
+
+  if is_completed "transcription_gans_viterbi"; then
+        log "Skipping gans viterbi transcription  (already completed)"
+        return 0
+    fi
+
+    log "gans viterbi transcription."
+    mark_in_progress "gans viterbi transcription"
 
 #updating parameters viterbi.yaml 
 update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/viterbi.yaml" fairseq.task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" fairseq.task.text_data="$TEXT_OUTPUT/phones/" fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" fairseq.dataset.batch_size=1 fairseq.dataset.num_workers=0 fairseq.dataset.required_batch_size_multiple=1 fairseq.dataset.gen_subset=valid results_path="$GANS_OUTPUT_PHONES"
@@ -820,11 +770,27 @@ python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-d
   fairseq.common_eval.path="$RESULTS_DIR/checkpoint_best.pt" \
   fairseq.dataset.gen_subset=train results_path="$GANS_OUTPUT_PHONES"
 
+  if [ $? -eq 0 ]; then
+        mark_completed "transcription_gans_viterbi"
+        log "gans viterbi transcription successfully"
+    else
+        log "ERROR: gans viterbi transcription failed"
+        exit 1
+    fi
+
 }
 
 transcription_gans_kaldi(){
    activate_venv 
 
+   
+   if is_completed "transcription_gans_kaldi"; then
+        log "Skipping gans kaldi transcription  (already completed)"
+        return 0
+    fi
+
+    log "gans kaldi transcription."
+    mark_in_progress "gans kaldi transcription"
    # first step is to make a copy of viterbi and name is as kaldi
    cp -r $FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/viterbi.yaml $FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/generate/kaldi.yaml
 
@@ -858,10 +824,18 @@ python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-d
   fairseq.task.labels="wrd" \
    w2l_decoder="KALDI" \
   fairseq.dataset.gen_subset=valid results_path="$GANS_OUTPUT_WORDS" 
+
+
+ if [ $? -eq 0 ]; then
+        mark_completed "transcription_gans_kaldi"
+        log "gans kaldi transcription successfully"
+    else
+        log "ERROR: gans kaldi transcription failed"
+        exit 1
+    fi
   
 
 }
-
 
 
 
@@ -875,7 +849,17 @@ self_training()
    export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
 
+   if is_completed "self_training"; then
+        log "Skipping self training  (already completed)"
+        return 0
+    fi
+
+    log "self_training."
+    mark_in_progress "self_training"
+
    setup_env
+
+   
    
    #very important step  copy 
    cp -r $FAIRSEQ_ROOT/examples/wav2vec/unsupervised/kaldi_self_train $KALDI_ROOT/egs 
@@ -892,6 +876,16 @@ self_training()
     chmod +x $TRAIN_FILE
     $TRAIN_FILE > $KALDI_ROOT/egs/kaldi_self_train/st/results.txt
 
+
+     if [ $? -eq 0 ]; then
+        mark_completed "self_training"
+        log "gans self_training successfully"
+    else
+        log "ERROR: self_training failed"
+        exit 1
+    fi
+  
+
 }
 
 
@@ -902,11 +896,18 @@ transcription_HMM_phone_eval()
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
    export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+   
+if is_completed "transcription_HMM_phone_eval"; then
+        log "Skipping transcription and evaluation of HMM on phones  (already completed)"
+        return 0
+    fi
 
+    log "transcription and evaluation of HMM on phones."
+    mark_in_progress "transcription_HMM_phone_eval"
    
  DECODE_PHONE=$KALDI_ROOT/egs/kaldi_self_train/st/decode_phone.sh
 
- output=$(get_best_path $KALDI_ROOT/egs/kaldi_self_train/st/results.txt) #created an output to store best hmm results 
+ output=$(get_best_path_pipeline $KALDI_ROOT/egs/kaldi_self_train/st/results.txt) #created an output to store best hmm results 
  IFS='/' read -ra ADDR <<< "$output"
  result="${ADDR[-1]%.tra.txt}"
 
@@ -915,6 +916,15 @@ chmod +x  $DECODE_PHONE
 cd $KALDI_ROOT/egs/kaldi_self_train/st/ 
 
 $DECODE_PHONE
+
+ if [ $? -eq 0 ]; then
+        mark_completed "transcription_HMM_phone_eval"
+        log "transcription and evaluation of HMM on phones successfully"
+    else
+        log "ERROR: transcription and evaluation of HMM on phones failed"
+        exit 1
+    fi
+  
 }
 
 transcription_HMM_word_eval()
@@ -923,10 +933,18 @@ transcription_HMM_word_eval()
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
    export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+
+   if is_completed "transcription_HMM_word_eval"; then
+        log "Skipping HMM training on word (already completed)"
+        return 0
+    fi
+
+    log "HMM training on word."
+    mark_in_progress "HMM training on word"
    
  DECODE_WORD=$KALDI_ROOT/egs/kaldi_self_train/st/decode_word_step1.sh
 
- output=$(get_best_path $KALDI_ROOT/egs/kaldi_self_train/st/results.txt) #results.txt is an output that stores best hmm results 
+ output=$(get_best_path_pipeline $KALDI_ROOT/egs/kaldi_self_train/st/results.txt) #results.txt is an output that stores best hmm results 
  IFS='/' read -ra ADDR <<< "$output"
  result="${ADDR[-1]%.tra.txt}"
 
@@ -937,6 +955,15 @@ chmod +x  $DECODE_WORD
 cd $KALDI_ROOT/egs/kaldi_self_train/st/ 
 $DECODE_WORD > $KALDI_ROOT/egs/kaldi_self_train/st/results_word.txt
 
+ if [ $? -eq 0 ]; then
+        mark_completed "transcription_HMM_word_eval"
+        log "HMM training on word successfully"
+    else
+        log "ERROR: HMM training on word failed"
+        exit 1
+    fi
+  
+
 }
 
 transcription_HMM_word2_eval()
@@ -945,10 +972,18 @@ transcription_HMM_word2_eval()
    export KALDI_ROOT="$DIR_PATH/pykaldi/tools/kaldi"
    export KENLM_ROOT="$KENLM_ROOT"
    export PYTHONPATH=$FAIRSEQ_ROOT:$PYTHONPATH
+
+   if is_completed "transcription_HMM_word2_eval"; then
+        log "Skipping transcription and evaluation of HMM on word  (already completed)"
+        return 0
+    fi
+
+    log "transcription and evaluation of HMM on word."
+    mark_in_progress "transcription and evaluation of HMM on word"
    
  DECODE_WORD2=$KALDI_ROOT/egs/kaldi_self_train/st/decode_word_step2.sh
 
- output=$(get_best_path $KALDI_ROOT/egs/kaldi_self_train/st/results_word.txt) #created an output to store best hmm results  #not necessary, we can view and place our values 
+ output=$(get_best_path_pipeline $KALDI_ROOT/egs/kaldi_self_train/st/results_word.txt) #created an output to store best hmm results  #not necessary, we can view and place our values 
  IFS='/' read -ra ADDR <<< "$output"
  result="${ADDR[-1]%.tra.txt}"
 
@@ -961,6 +996,15 @@ echo "here"
 cd $KALDI_ROOT/egs/kaldi_self_train/st/ 
 $DECODE_WORD2
 
+ if [ $? -eq 0 ]; then
+        mark_completed "transcription_HMM_word2_eval"
+        log "transcription and evaluation of HMM on word successfully"
+    else
+        log "ERROR: transcription and evaluation of HMM on word  failed"
+        exit 1
+    fi
+  
+
 }
 
 # ==================== MAIN EXECUTION ====================
@@ -970,19 +1014,15 @@ main() {
     create_dirs #creates directories for storing outputs from the different steps 
 
     activate_venv 
-
-
     
     log "Starting wav2vec unsupervised pipeline for $DATASET"
  
-
    log "
    it creates a manifest files for the audio dataset
 audio format
    "
     create_manifests 0 
 
-    
       #creates new manifest with silence removed
     
     create_rVADfast # identifies the sequence of silence in an audio 
