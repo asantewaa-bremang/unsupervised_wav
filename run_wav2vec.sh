@@ -32,7 +32,6 @@ OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initiali
 DATASETS=$1 #/path/to/unlabelled/audio_data 
 UNLABELLED_TEXT=$2 #/path/to/unlabelled_text_file 
 NEW_SAMPLE_PCT=0.5
-
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
 
@@ -190,6 +189,7 @@ update_batch_size()
 }
 
 
+#update is done in add-self-loop-simple.cc to replace std_endl with "\n" since std_endl is not compatible with pykaldi installation for text preprocessing
 replace_std_endl() {
     local input_file="$1"
     
@@ -204,6 +204,7 @@ replace_std_endl() {
     echo "Replacement done in '$input_file'"
 }
 
+#this is to help updates yaml files needs for sucessful run of certain processes.
 add_to_existing_yaml() {
   if [ "$#" -ne 4 ]; then
     echo "Usage: add_to_existing_yaml <config_file> <parent_key> <new_key> <new_value>"
@@ -317,7 +318,7 @@ print(f"Configuration file '{config_file}' updated successfully.")
 EOF
 }
 
-# Function to update a file's empty variables with provided values
+# Function to update a file's empty variables with provided values, this is applied in train.sh and the other files in the self training phase of the project
 update_file_variables() {
     if [ "$#" -lt 2 ]; then
         echo "Usage: update_file_variables <filename> <var1=value> <var2=value> ..."
@@ -349,7 +350,7 @@ update_file_variables() {
     echo "Updated $file successfully."
 }
 
-
+#used to comment a specific line in the train.sh script. it prevent processing the text for the train_gt folder
 comment_line() {
     # Ensure correct number of arguments
     if [ "$#" -ne 2 ]; then
@@ -379,6 +380,8 @@ comment_line() {
     fi
 }
 
+
+#this is used to update the evaluation scripts for with the best self-trained model 
 get_best_path_pipeline() {
     local input_file="$1"
 
@@ -451,6 +454,7 @@ get_best_path_pipeline() {
 }
 
 
+#this script is there to allow processing of ground truth text in the self training for only validation dataset
 update_script_with_condition() {
     local SCRIPT_FILE="$1"
     
@@ -513,7 +517,7 @@ EOF
 # Step 1: Create data manifests
 create_manifests() {
     local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
-    # echo $valid_pct
+ 
     local step_name="create_manifests_${valid_pct//./_}" 
     if is_completed "create_manifests"; then
         log "Skipping manifest creation (already completed)"
@@ -583,7 +587,7 @@ remove_silence() {
     
     log "removing silence from audios1"
     mark_in_progress "removing silence from audios1"
-    # python "$HOME/wav2vec_setup/addition_scripts/vads.py" -r $RVAD_ROOT < "$MANIFEST_DIR/train.tsv" > "$MANIFEST_DIR/train.vads"
+
     python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/train.tsv" --vads "$MANIFEST_DIR/train.vads" --out "$DATA_ROOT/processed_audio"
     # Check if the command was successful
     if [ $? -eq 0 ]; then
@@ -649,7 +653,6 @@ export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
     log "audio preparation"
     mark_in_progress "audio preparation"
 
-    # python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/train.tsv" --vads "$MANIFEST_DIR/train.vads" --out "$DATA_ROOT/processed_audio"
     zsh "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/prepare_audio.sh" "$MANIFEST_DIR" $CLUSTERING_DIR $MODEL 512 14
     # Check if the command was successful
     if [ $? -eq 0 ]; then
@@ -708,7 +711,7 @@ export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
     mark_in_progress "gans training"
    
 
-update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" task.text_data="$TEXT_OUTPUT/phones/" task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" model.code_penalty=2,4 model.gradient_penalty=1.5 model.smoothness_weight=0.5 checkpoint.save_dir=$RESULTS_DIR  
+update_yaml_config "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" task.data="$CLUSTERING_DIR/precompute_pca512_cls128_mean_pooled" task.text_data="$TEXT_OUTPUT/phones/" task.kenlm_path="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin" common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" model.code_penalty=2,4 model.gradient_penalty=1.5 model.smoothness_weight=0.5
 
 add_to_existing_yaml "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" optimizer.groups.discriminator.optimizer lr [0.004]
 add_to_existing_yaml "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.yaml" optimizer.groups.generator.optimizer lr [0.004]
@@ -724,7 +727,7 @@ delete_yaml_field "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/config/gan/w2vu.y
     common.user_dir="$FAIRSEQ_ROOT/examples/wav2vec/unsupervised" \
     model.code_penalty=2,4 model.gradient_penalty=1.5,2.0 \
     model.smoothness_weight=0.5,0.75,1.0 'common.seed=range(0,5)' \
-    checkpoint.save_dir=$RESULTS_DIR 2>&1 | tee $RESULTS_DIR/training1.log
+    2>&1 | tee $RESULTS_DIR/training1.log
 
    if [ $? -eq 0 ]; then
         mark_completed "train_gans"
