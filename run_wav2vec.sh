@@ -784,9 +784,7 @@ python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/w2vu_generate.py" --config-d
 }
 
 transcription_gans_kaldi(){
-   activate_venv 
 
-   
    if is_completed "transcription_gans_kaldi"; then
         log "Skipping gans kaldi transcription  (already completed)"
         return 0
@@ -860,10 +858,6 @@ self_training()
     log "self_training."
     mark_in_progress "self_training"
 
-   setup_env
-
-   
-   
    #very important step  copy 
    cp -r $FAIRSEQ_ROOT/examples/wav2vec/unsupervised/kaldi_self_train $KALDI_ROOT/egs 
 
