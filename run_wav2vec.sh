@@ -869,7 +869,7 @@ self_training()
 
     TRAIN_FILE=$KALDI_ROOT/egs/kaldi_self_train/st/train.sh 
 
-    update_file_variables $TRAIN_FILE w2v_dir="$CLUSTERING_ROOT" lab_dir=$GANS_OUTPUT_PHONES out_dir=$ST_OUTPUT arpa_lm="$TEXT_OUTPUT/phones/lm.phones.filtered.04.arpa" arpa_lm_bin="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin/" label=phnc
+    update_file_variables $TRAIN_FILE w2v_dir="$CLUSTERING_DIR" lab_dir=$GANS_OUTPUT_PHONES out_dir=$ST_OUTPUT arpa_lm="$TEXT_OUTPUT/phones/lm.phones.filtered.04.arpa" arpa_lm_bin="$TEXT_OUTPUT/phones/lm.phones.filtered.04.bin/" label=phnc
 
     comment_line $TRAIN_FILE "  python local/copy_aligned_text.py < \$w2v_dir/\$x.\$label > \$data_dir/\$x_gt/text"
 
@@ -951,7 +951,7 @@ transcription_HMM_word_eval()
  IFS='/' read -ra ADDR <<< "$output"
  result="${ADDR[-1]%.tra.txt}"
 
-update_file_variables $DECODE_WORD w2v_dir="$CLUSTERING_ROOT" out_dir=$ST_OUTPUT lexicon=$TEXT_OUTPUT/lexicon_filtered.lst wrd_arpa_lm=$TEXT_OUTPUT/kenlm.wrd.o40003.arpa wrd_arpa_lm_bin=$TEXT_OUTPUT/kenlm.wrd.o40003.bin dec_exp=${ADDR[-4]} dec_splits="valid" dec_script=steps/decode_fmllr.sh
+update_file_variables $DECODE_WORD w2v_dir="$CLUSTERING_DIR" out_dir=$ST_OUTPUT lexicon=$TEXT_OUTPUT/lexicon_filtered.lst wrd_arpa_lm=$TEXT_OUTPUT/kenlm.wrd.o40003.arpa wrd_arpa_lm_bin=$TEXT_OUTPUT/kenlm.wrd.o40003.bin dec_exp=${ADDR[-4]} dec_splits="valid" dec_script=steps/decode_fmllr.sh
 
 chmod +x  $DECODE_WORD
 
