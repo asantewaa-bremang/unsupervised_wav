@@ -119,10 +119,8 @@ activate_venv() {
 }
 
 setup_env() {
-
     export HYDRA_FULL_ERROR=1
     export LD_LIBRARY_PATH="${KALDI_ROOT}/src/lib:${KENLM_ROOT}/lib:${LD_LIBRARY_PATH:-}"
-
 }
 
 
@@ -1010,7 +1008,8 @@ main() {
     
     create_dirs #creates directories for storing outputs from the different steps 
 
-    activate_venv 
+    activate_venv  
+    setup_env #add kenlm and kaldi to the LD_LIBRARY directory
     
     log "Starting wav2vec unsupervised pipeline for $DATASET"
  
@@ -1028,7 +1027,7 @@ audio format
 
 
    # Train GANS: 
-   #     prepare_audio:
+   #     prepare_audio:  processes the unlabelled audio 
    #     prepare_text:
    #     train_gans:
 
@@ -1036,8 +1035,21 @@ audio format
     prepare_text  
     train_gans
 
+#===========================================================Evaluation ===========================================
+
+#the trained checkpoints from train_gans will be stored in a folder called multirun. The checkpoint will be stored in this format 
+#multirun --
+ #         |
+ #         day/month/year --
+ #                         |
+ #                         time --
+ #                                |
+ #                                checkpoint_best.pt
+ #                                 checkpoint_last.pt
+ #therefore it is advisable to manually provide the path to the exact checkpoint to use under the variable $CHECKPOINT_DIR  in the run_wav2vec.sh script
+ 
 # '''
-# Transcriptions from GAN model 
+# Transcriptions from the GAN model 
 #      transcription_gans_viterbi: outputs phonetic transcription in variable name $GANS_OUTPUT_PHONES
 #      transcription_gans_kaldi: outputs word transcription in variable name $GANS_OUTPUT_WORDS
 # '''
