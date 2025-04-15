@@ -341,7 +341,7 @@ update_file_variables() {
 
         # Use `sed` to replace only existing variables in the file
         sed -i "s|^$var_name=.*$|$var_name=$escaped_value|" "$file"
-        # sed -i "s/^$var_name=.*$/$var_name=$var_value/" "$file"
+      
         echo "done"
     done
 
