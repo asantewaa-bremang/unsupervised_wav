@@ -112,7 +112,7 @@ check_prerequisites() {
 
 # ==================== SETUP STEPS ====================
 
-# Step 2: Set up Python virtual environment
+# Set up Python virtual environment
 setup_venv() {
     log "Setting up Python virtual environment..."
     
@@ -145,7 +145,7 @@ echo "Detected Python version: $version"
     log "Python virtual environment setup completed."
 }
 
-# Step 3: Install PyTorch and related packages
+# Install PyTorch and related packages
 install_pytorch() {
     log "Installing PyTorch and related packages..."
 
@@ -170,7 +170,7 @@ install_pytorch() {
     log "PyTorch and related packages installed successfully."
 }
 
-# Step 4: Clone and install fairseq
+# Clone and install fairseq
 install_fairseq() {
     log "--- Installing fairseq ---"
     log "Activating virtual environment: $VENV_PATH"
@@ -211,7 +211,7 @@ install_fairseq() {
 }
 
 
-# Step 5: Install rVADfast for audio silence removal
+#Install rVADfast for audio silence removal
 install_rVADfast() {
     log "Cloning and installing rVADfast..."
     cd "$INSTALL_ROOT"
@@ -233,7 +233,7 @@ install_rVADfast() {
     log "rVADfast installed successfully."
 }
 
-# Step 6: Clone and build KenLM
+#  Clone and build KenLM
 install_kenlm() {
     log "Cloning and building KenLM..."
     cd "$INSTALL_ROOT"
@@ -267,7 +267,7 @@ install_kenlm() {
     log "KenLM built successfully."
 }
 
-# Step 7: Install Flashlight and Flashlight-Sequence
+#  Install Flashlight and Flashlight-Sequence
 install_flashlight() {
     log "--- Installing Flashlight (Text and Sequence) ---"
     cd "$INSTALL_ROOT"
@@ -348,7 +348,7 @@ install_flashlight() {
 
 
 
-# Step 8: Install PyKaldi
+#  Install PyKaldi
 install_pykaldi() {
     log "Installing pykaldi..."
     cd "$INSTALL_ROOT"
@@ -414,7 +414,7 @@ install_pykaldi() {
     log "PyKaldi installed successfully."
 }
 
-# Step 9: Download pre-trained wav2vec model
+#  Download pre-trained wav2vec model
 download_pretrained_model() {
     log "Downloading pre-trained wav2vec model..."
     
@@ -430,7 +430,7 @@ download_pretrained_model() {
     log "Pre-trained model downloaded successfully."
 }
 
-# Step 10: Download language identification model
+# Download language identification model
 download_languageIdentification_model() {
     log "Downloading language identification model..."
     
