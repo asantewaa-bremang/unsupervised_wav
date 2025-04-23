@@ -29,8 +29,9 @@ OPENFST_PATH="$DIR_PATH/fairseq/examples/speech_recognition/kaldi/kaldi_initiali
 
 
 # adding to system paths
-DATASETS=$1 #/path/to/unlabelled/audio_data 
-UNLABELLED_TEXT=$2 #/path/to/unlabelled_text_file 
+TRAIN_DATASETS=$1 #/path/to/unlabelled/train_audio_data 
+VAL_DATASETS=$2 #/path/to/unlabelled/validation_audio_data 
+UNLABELLED_TEXT=$3 #/path/to/unlabelled_text_file 
 NEW_SAMPLE_PCT=0.5
 MIN_PHONES=15
 NEW_BATCH_SIZE=32
@@ -45,6 +46,7 @@ DATASET_NAME="librispeech"
 
 # Output directories (will be created if they don't exist)
 MANIFEST_DIR="$DATA_ROOT/manifests"
+MANIFEST_NONSIL_DIR="$DATA_ROOT/manifests_nonsil"
 CLUSTERING_DIR="$DATA_ROOT/clustering/$DATASET_NAME"
 RESULTS_DIR="$DATA_ROOT/results/$DATASET_NAME"
 CHECKPOINT_DIR="$DATA_ROOT/checkpoints/$DATASET_NAME"
@@ -62,7 +64,7 @@ CHECKPOINT_FILE="$CHECKPOINT_DIR/progress.checkpoint"
 
 # Create directories if they don't exist
 create_dirs() {
-    mkdir -p "$MANIFEST_DIR" "$CLUSTERING_DIR"  \
+    mkdir -p "$MANIFEST_DIR" "$CLUSTERING_DIR" "$MANIFEST_NONSIL_DIR" \
              "$RESULTS_DIR" "$CHECKPOINT_DIR" "$LOG_DIR" "$GANS_OUTPUT_PHONES" \
              "$TEXT_OUTPUT" "$GANS_OUTPUT_PHONES" "$ST_OUTPUT"
 }
@@ -322,6 +324,7 @@ EOF
 # Step 1: Create data manifests
 create_manifests() {
     local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
+   
  
     local step_name="create_manifests_${valid_pct//./_}" 
     if is_completed "create_manifests"; then
@@ -333,15 +336,21 @@ create_manifests() {
     mark_in_progress "create_manifests"
     
     # Adjust this command according to your dataset
-    echo "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py"
-    echo "$DATASETS"
-    echo "$MANIFEST_DIR"
+    # echo "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py"
+    # echo "$DATASETS"
+    # echo "$MANIFEST_DIR"
     
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
-        "$DATASETS" \
+        "$TRAIN_DATASETS" \
         --dest "$MANIFEST_DIR" \
         --ext wav \
-        --valid-percent "$valid_pct"
+        --valid-percent 0.0 #"$valid_pct"
+
+   python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
+        "$VAL_DATASETS" \
+        --dest "$MANIFEST_DIR" \
+        --ext wav \
+        --valid-percent 1.0 #"$valid_pct"
     
     # Check if the command was successful
     if [ $? -eq 0 ]; then
@@ -370,7 +379,7 @@ create_rVADfast() {
     log "removing silence from audios"
     mark_in_progress "removing silence from audios"
     python "$DIR_PATH/vads.py" -r $RVAD_ROOT < "$MANIFEST_DIR/train.tsv" > "$MANIFEST_DIR/train.vads"
-    
+    python "$DIR_PATH/vads.py" -r $RVAD_ROOT < "$MANIFEST_DIR/valid.tsv" > "$MANIFEST_DIR/valid.vads"
     # Check if the command was successful
     if [ $? -eq 0 ]; then
         mark_completed "create_rVADfast"
@@ -394,6 +403,8 @@ remove_silence() {
     mark_in_progress "removing silence from audios1"
 
     python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/train.tsv" --vads "$MANIFEST_DIR/train.vads" --out "$DATA_ROOT/processed_audio"
+    python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/valid.tsv" --vads "$MANIFEST_DIR/valid.vads" --out "$DATA_ROOT/processed_audio"
+    
     # Check if the command was successful
     if [ $? -eq 0 ]; then
         mark_completed "remove_silence"
@@ -420,9 +431,15 @@ create_manifests_nonsil() {
     
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$DATASETS" \
-        --dest "$MANIFEST_DIR" \
+        --dest "$MANIFEST_NONSIL_DIR" \
         --ext wav \
-        --valid-percent "$valid_pct"
+        --valid-percent 0.0 #"$valid_pct"
+
+    python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
+        "$DATASETS" \
+        --dest "$MANIFEST_NONSIL_DIR" \
+        --ext wav \
+        --valid-percent 1.0 #"$valid_pct"
     
     # Check if the command was successful
     if [ $? -eq 0 ]; then
@@ -458,7 +475,7 @@ export FAIRSEQ_ROOT=$FAIRSEQ_ROOT
     log "audio preparation"
     mark_in_progress "audio preparation"
 
-    zsh "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/prepare_audio.sh" "$MANIFEST_DIR" $CLUSTERING_DIR $MODEL 512 14
+    zsh "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/prepare_audio.sh" "$MANIFEST_NONSIL_DIR" $CLUSTERING_DIR $MODEL 512 14
     # Check if the command was successful
     if [ $? -eq 0 ]; then
         mark_completed "prepare_audio"
