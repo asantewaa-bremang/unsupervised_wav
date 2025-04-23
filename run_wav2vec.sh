@@ -46,6 +46,7 @@ DATASET_NAME="librispeech"
 
 # Output directories (will be created if they don't exist)
 MANIFEST_DIR="$DATA_ROOT/manifests"
+NONSIL_AUDIO="$DATA_ROOT/processed_audio/"
 MANIFEST_NONSIL_DIR="$DATA_ROOT/manifests_nonsil"
 CLUSTERING_DIR="$DATA_ROOT/clustering/$DATASET_NAME"
 RESULTS_DIR="$DATA_ROOT/results/$DATASET_NAME"
@@ -402,8 +403,8 @@ remove_silence() {
     log "removing silence from audios1"
     mark_in_progress "removing silence from audios1"
 
-    python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/train.tsv" --vads "$MANIFEST_DIR/train.vads" --out "$DATA_ROOT/processed_audio"
-    python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/valid.tsv" --vads "$MANIFEST_DIR/valid.vads" --out "$DATA_ROOT/processed_audio"
+    python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/train.tsv" --vads "$MANIFEST_DIR/train.vads" --out "$NONSIL_AUDIO/train"
+    python "$FAIRSEQ_ROOT/examples/wav2vec/unsupervised/scripts/remove_silence.py" --tsv "$MANIFEST_DIR/valid.tsv" --vads "$MANIFEST_DIR/valid.vads" --out "$NONSIL_AUDIO/val"
     
     # Check if the command was successful
     if [ $? -eq 0 ]; then
@@ -430,13 +431,13 @@ create_manifests_nonsil() {
     mark_in_progress "create_manifests_nonsil"
     
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
-        "$DATASETS" \
+        "$NONSIL_AUDIO/train" \
         --dest "$MANIFEST_NONSIL_DIR" \
         --ext wav \
         --valid-percent 0.0 #"$valid_pct"
 
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
-        "$DATASETS" \
+        "$NONSIL_AUDIO/val" \
         --dest "$MANIFEST_NONSIL_DIR" \
         --ext wav \
         --valid-percent 1.0 #"$valid_pct"
