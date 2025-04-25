@@ -323,29 +323,52 @@ EOF
 # ==================== MAIN STEPS ====================
 
 # Step 1: Create data manifests
-create_manifests() {
+create_manifests_train() {
     local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
    
  
     local step_name="create_manifests_${valid_pct//./_}" 
-    if is_completed "create_manifests"; then
+    if is_completed "create_manifests_train"; then
         log "Skipping manifest creation (already completed)"
         return 0
     fi
     
     log "Creating data manifests..."
-    mark_in_progress "create_manifests"
+    mark_in_progress "create_manifests_train"
     
-    # Adjust this command according to your dataset
-    # echo "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py"
-    # echo "$DATASETS"
-    # echo "$MANIFEST_DIR"
     
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$TRAIN_DATASETS" \
         --dest "$MANIFEST_DIR" \
         --ext wav \
         --valid-percent 0.0 #"$valid_pct"
+
+    
+    # Check if the command was successful
+    if [ $? -eq 0 ]; then
+        mark_completed "create_manifests_train"
+        log "Manifest creation completed successfully"
+    else
+        log "ERROR: Manifest creation failed"
+        exit 1
+    fi
+}
+
+
+create_manifests_val() {
+    local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
+   
+ 
+    local step_name="create_manifests_${valid_pct//./_}" 
+    if is_completed "create_manifests_val"; then
+        log "Skipping manifest creation (already completed)"
+        return 0
+    fi
+    
+    log "Creating data manifests..."
+    mark_in_progress "create_manifests_val"
+    
+
 
    python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$VAL_DATASETS" \
@@ -355,7 +378,7 @@ create_manifests() {
     
     # Check if the command was successful
     if [ $? -eq 0 ]; then
-        mark_completed "create_manifests"
+        mark_completed "create_manifests_val"
         log "Manifest creation completed successfully"
     else
         log "ERROR: Manifest creation failed"
@@ -418,7 +441,7 @@ remove_silence() {
 }
 
 #Step 4: create new manifest files for train and validation set with no silence 
-create_manifests_nonsil() {
+create_manifests_nonsil_train() {
     local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
     # echo $valid_pct
     local step_name="create_manifests_${valid_pct//./_}" 
@@ -436,12 +459,6 @@ create_manifests_nonsil() {
         --ext wav \
         --valid-percent 0.0 #"$valid_pct"
 
-    python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
-        "$NONSIL_AUDIO/val" \
-        --dest "$MANIFEST_NONSIL_DIR" \
-        --ext wav \
-        --valid-percent 1.0 #"$valid_pct"
-    
     # Check if the command was successful
     if [ $? -eq 0 ]; then
         mark_completed "create_manifests_nonsil"
@@ -452,6 +469,34 @@ create_manifests_nonsil() {
     fi
 }
 
+create_manifests_nonsil_val() {
+    local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
+    # echo $valid_pct
+    local step_name="create_manifests_${valid_pct//./_}" 
+    if is_completed "create_manifests_nonsil_val"; then
+        log "Skipping nonsil manifest creation (already completed)"
+        return 0
+    fi
+    
+    log "Creating data manifests..."
+    mark_in_progress "create_manifests_nonsil_val"
+ 
+
+    python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
+        "$NONSIL_AUDIO/val" \
+        --dest "$MANIFEST_NONSIL_DIR" \
+        --ext wav \
+        --valid-percent 1.0 #"$valid_pct"
+    
+    # Check if the command was successful
+    if [ $? -eq 0 ]; then
+        mark_completed "create_manifests_nonsil_val"
+        log "nonsil Manifest creation completed successfully"
+    else
+        log "ERROR: nonsil Manifest creation failed"
+        exit 1
+    fi
+}
 
 #Step 5: Prepare audio file
 #a. 
@@ -588,13 +633,15 @@ main() {
    it creates a manifest files for the audio dataset
 audio format
    "
-    create_manifests 0 
+    create_manifests_train 0 
+    create_manifests_val 0 
 
       #creates new manifest with silence removed
     
     create_rVADfast # identifies the sequence of silence in an audio 
     remove_silence # removes the silence sequence found by rvad in the audio
-    create_manifests_nonsil 0.1
+    create_manifests_nonsil_train 0.1
+    create_manifests_nonsil_val 0.1
 
 
    # Train GANS: 
