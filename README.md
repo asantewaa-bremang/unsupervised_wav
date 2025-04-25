@@ -28,7 +28,7 @@ the steps provided can be run in a terminal of your machine
        6. Rerun this setup script AFTER rebooting/re-logging in."
 
 4. ### chmod +x run_wav2vec.sh
-5.  ### ./run_wav2vec.sh "/path/to/audio_dataset" "/path/to/unlabelled/text_dataset"
+5.  ### ./run_wav2vec.sh "/path/to/train_audio_dataset""/path/to/val_audio_dataset" "/path/to/unlabelled/text_dataset"
     Please note that for the successful completion of audio preprocessing,
 
          all audio files must be converted to .wav for a successful script run
