@@ -625,7 +625,7 @@ main() {
     create_dirs #creates directories for storing outputs from the different steps 
 
     activate_venv  
-    setup_path#add kenlm and kaldi to the LD_LIBRARY directory
+    setup_path  #add kenlm and kaldi to the LD_LIBRARY directory
     
     log "Starting wav2vec unsupervised pipeline for $DATASET"
  
