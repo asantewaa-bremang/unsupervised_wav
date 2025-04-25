@@ -341,7 +341,7 @@ create_manifests_train() {
         "$TRAIN_DATASETS" \
         --dest "$MANIFEST_DIR" \
         --ext wav \
-        --valid-percent 0.0 #"$valid_pct"
+        --valid-percent 0 #"$valid_pct"
 
     
     # Check if the command was successful
@@ -457,7 +457,7 @@ create_manifests_nonsil_train() {
         "$NONSIL_AUDIO/train" \
         --dest "$MANIFEST_NONSIL_DIR" \
         --ext wav \
-        --valid-percent 0.0 #"$valid_pct"
+        --valid-percent 0 #"$valid_pct"
 
     # Check if the command was successful
     if [ $? -eq 0 ]; then
