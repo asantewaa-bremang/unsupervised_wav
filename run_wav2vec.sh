@@ -505,7 +505,9 @@ create_manifests_nonsil_val() {
     log "Creating data manifests..."
     mark_in_progress "create_manifests_nonsil_val"
  
-
+    local TEMP_VAL_DIR
+    TEMP_VAL_DIR=$(mktemp -d "$MANIFEST_NONSIL_DIR/val_manifest.XXXXXX")
+    log "Using temporary directory for validation manifest: $TEMP_VAL_DIR"
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$NONSIL_AUDIO/val" \
         --dest "$MANIFEST_NONSIL_DIR" \
@@ -513,13 +515,32 @@ create_manifests_nonsil_val() {
         --valid-percent 1.0 #"$valid_pct"
     
     # Check if the command was successful
-    if [ $? -eq 0 ]; then
-        mark_completed "create_manifests_nonsil_val"
-        log "nonsil Manifest creation completed successfully"
+   if [ $python_exit_code -eq 0 ]; then
+        # Move the generated valid.tsv to the main manifest directory, overwriting the empty one if it exists
+        if [ -f "$TEMP_VAL_DIR/valid.tsv" ]; then
+            mv "$TEMP_VAL_DIR/valid.tsv" "$MANIFEST_NONSIIL_DIR/valid.tsv"
+            log "Moved validation manifest to $MANIFEST_NONSIL_DIR/valid.tsv"
+            mark_completed "$step_name"
+            log "VALIDATION manifest creation completed successfully"
+        else
+             log "ERROR: Expected valid.tsv not found in temporary directory $TEMP_VAL_DIR"
+             rm -rf "$TEMP_VAL_DIR" # Clean up temp dir
+             exit 1
+        fi
     else
-        log "ERROR: nonsil Manifest creation failed"
-        exit 1
+        log "ERROR: VALIDATION manifest creation failed (Python script error)"
+        # No need to mark completed
     fi
+
+    # Clean up the temporary directory
+    rm -rf "$TEMP_VAL_DIR"
+    log "Cleaned up temporary directory $TEMP_VAL_DIR"
+
+    # Exit if the python script failed earlier
+    if [ $python_exit_code -ne 0 ]; then
+         exit 1
+    fi
+
 }
 
 #Step 5: Prepare audio file
