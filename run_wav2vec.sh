@@ -323,70 +323,94 @@ EOF
 # ==================== MAIN STEPS ====================
 
 # Step 1: Create data manifests
+# Step 1: Create data manifests - Modified Functions
+
 create_manifests_train() {
-    local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
-   
- 
-    local step_name="create_manifests_${valid_pct//./_}" 
-    if is_completed "create_manifests_train"; then
-        log "Skipping manifest creation (already completed)"
+    # No need for valid_pct argument here if it's always 0 for train
+    local step_name="create_manifests_train" # Use a consistent, clear name
+
+    if is_completed "$step_name"; then
+        log "Skipping train manifest creation (already completed)"
         return 0
     fi
-    
-    log "Creating data manifests..."
-    mark_in_progress "create_manifests_train"
-    
-    
+
+    log "Creating TRAIN data manifest..."
+    mark_in_progress "$step_name"
+
+    # Ensure the validation file potentially created here is removed or ignored later
+    # Run the script to create train.tsv (and an empty valid.tsv)
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$TRAIN_DATASETS" \
         --dest "$MANIFEST_DIR" \
         --ext wav \
-        --valid-percent 0 #"$valid_pct"
+        --valid-percent 0 # Force 100% to train.tsv
 
-    
     # Check if the command was successful
     if [ $? -eq 0 ]; then
-        mark_completed "create_manifests_train"
-        log "Manifest creation completed successfully"
+        # Optional: remove the empty valid.tsv if you want clarity
+        # rm -f "$MANIFEST_DIR/valid.tsv"
+        mark_completed "$step_name"
+        log "TRAIN manifest creation completed successfully"
     else
-        log "ERROR: Manifest creation failed"
+        log "ERROR: TRAIN manifest creation failed"
         exit 1
     fi
 }
-
 
 create_manifests_val() {
-    local valid_pct="${1:-$VALID_PERCENT}"  # Use provided value or default from config
-   
- 
-    local step_name="create_manifests_${valid_pct//./_}" 
-    if is_completed "create_manifests_val"; then
-        log "Skipping manifest creation (already completed)"
+    # No need for valid_pct argument here if it's always 1.0 for val
+    local step_name="create_manifests_val" # Use a consistent, clear name
+
+    if is_completed "$step_name"; then
+        log "Skipping validation manifest creation (already completed)"
         return 0
     fi
-    
-    log "Creating data manifests..."
-    mark_in_progress "create_manifests_val"
-    
 
+    log "Creating VALIDATION data manifest..."
+    mark_in_progress "$step_name"
 
-   python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
+    # Create a temporary directory for the validation manifest generation
+    local TEMP_VAL_DIR
+    TEMP_VAL_DIR=$(mktemp -d "$MANIFEST_DIR/val_manifest.XXXXXX")
+    log "Using temporary directory for validation manifest: $TEMP_VAL_DIR"
+
+    # Generate manifests in the temporary directory (will create empty train.tsv and desired valid.tsv)
+    python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$VAL_DATASETS" \
-        --dest "$MANIFEST_DIR" \
+        --dest "$TEMP_VAL_DIR" \
         --ext wav \
-        --valid-percent 1.0 #"$valid_pct"
-    
-    # Check if the command was successful
-    if [ $? -eq 0 ]; then
-        mark_completed "create_manifests_val"
-        log "Manifest creation completed successfully"
+        --valid-percent 1.0 # Force 100% to valid.tsv
+
+    local python_exit_code=$?
+
+    if [ $python_exit_code -eq 0 ]; then
+        # Move the generated valid.tsv to the main manifest directory, overwriting the empty one if it exists
+        if [ -f "$TEMP_VAL_DIR/valid.tsv" ]; then
+            mv "$TEMP_VAL_DIR/valid.tsv" "$MANIFEST_DIR/valid.tsv"
+            log "Moved validation manifest to $MANIFEST_DIR/valid.tsv"
+            mark_completed "$step_name"
+            log "VALIDATION manifest creation completed successfully"
+        else
+             log "ERROR: Expected valid.tsv not found in temporary directory $TEMP_VAL_DIR"
+             rm -rf "$TEMP_VAL_DIR" # Clean up temp dir
+             exit 1
+        fi
     else
-        log "ERROR: Manifest creation failed"
-        exit 1
+        log "ERROR: VALIDATION manifest creation failed (Python script error)"
+        # No need to mark completed
+    fi
+
+    # Clean up the temporary directory
+    rm -rf "$TEMP_VAL_DIR"
+    log "Cleaned up temporary directory $TEMP_VAL_DIR"
+
+    # Exit if the python script failed earlier
+    if [ $python_exit_code -ne 0 ]; then
+         exit 1
     fi
 }
 
-
+# --- In your main function ---
 # Step 2: create vads files out of the audios 
 create_rVADfast() { 
     
@@ -457,7 +481,7 @@ create_manifests_nonsil_train() {
         "$NONSIL_AUDIO/train" \
         --dest "$MANIFEST_NONSIL_DIR" \
         --ext wav \
-        --valid-percent 0 #"$valid_pct"
+        --valid-percent 0.0 #"$valid_pct"
 
     # Check if the command was successful
     if [ $? -eq 0 ]; then
