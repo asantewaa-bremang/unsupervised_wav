@@ -481,7 +481,7 @@ create_manifests_nonsil_train() {
         "$NONSIL_AUDIO/train" \
         --dest "$MANIFEST_NONSIL_DIR" \
         --ext wav \
-        --valid-percent 0.0 #"$valid_pct"
+        --valid-percent 0 #"$valid_pct"
 
     # Check if the command was successful
     if [ $? -eq 0 ]; then
@@ -510,7 +510,7 @@ create_manifests_nonsil_val() {
     log "Using temporary directory for validation manifest: $TEMP_VAL_DIR"
     python "$FAIRSEQ_ROOT/examples/wav2vec/wav2vec_manifest.py" \
         "$NONSIL_AUDIO/val" \
-        --dest "$MANIFEST_NONSIL_DIR" \
+        --dest "$TEMP_VAL_DIR" \
         --ext wav \
         --valid-percent 1.0 #"$valid_pct"
     
